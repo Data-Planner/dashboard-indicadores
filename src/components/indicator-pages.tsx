@@ -27,7 +27,7 @@ function SortableIndicator({ item, group, onEdit, onDelete }: { item: Indicator;
   const { togglePriority } = useIndicators();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, data: { type: "indicator" } });
   return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("group flex min-h-16 items-center gap-2 border-b bg-card px-3 last:border-b-0", isDragging && "z-50 opacity-50 shadow-lg")}>
-    <Button variant="ghost" size="icon" className="cursor-grab text-muted-foreground" {...attributes} {...listeners} aria-label={`Arrastar ${item.name}`}><GripVertical /></Button>
+    <Button variant="ghost" size="icon" className="cursor-grab text-muted-foreground" {...attributes} {...listeners} aria-describedby={undefined} aria-label={`Arrastar ${item.name}`}><GripVertical /></Button>
     <span className={cn("h-8 w-1 rounded-full", groupStyles[group.color] ?? "bg-primary")} />
     <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.name}</p><p className="truncate text-xs text-muted-foreground">{item.unit || "Sem unidade"}{item.target !== undefined ? ` · Meta ${item.target.toLocaleString("pt-BR")}` : " · Sem meta"}</p></div>
     <Button variant="ghost" size="icon" onClick={() => togglePriority(item.id)} title={item.priority ? "Remover prioridade" : "Marcar como prioritário"} aria-label={item.priority ? "Remover prioridade" : "Marcar como prioritário"}><Star className={cn(item.priority && "fill-amber-400 text-amber-500")} /></Button>
@@ -39,7 +39,7 @@ function SortableGroup({ group, items, onAdd, onEdit, onDelete, onEditIndicator,
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.id, data: { type: "group" } });
   return <section ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("overflow-hidden rounded-lg border bg-card", isDragging && "z-40 opacity-60 shadow-xl")}>
     <div className="flex min-h-16 items-center gap-3 border-b bg-muted/40 px-3">
-      <Button variant="ghost" size="icon" className="cursor-grab" {...attributes} {...listeners} aria-label={`Arrastar grupo ${group.name}`}><GripVertical /></Button>
+      <Button variant="ghost" size="icon" className="cursor-grab" {...attributes} {...listeners} aria-describedby={undefined} aria-label={`Arrastar grupo ${group.name}`}><GripVertical /></Button>
       <span className={cn("h-3 w-3 rounded-sm", groupStyles[group.color] ?? "bg-primary")} /><div className="flex-1"><h2 className="font-bold">{group.name}</h2><p className="text-xs text-muted-foreground">{items.length} {items.length === 1 ? "indicador" : "indicadores"}</p></div>
       <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={`Ações do grupo ${group.name}`}><MoreHorizontal /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={onEdit}><Pencil /> Editar grupo</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={onDelete}><Trash2 /> Excluir grupo</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
     </div>
