@@ -2,7 +2,8 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type D
 import { SortableContext, rectSortingStrategy, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { read, utils } from "xlsx";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { useHydrated } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Download, FileSpreadsheet, GripVertical, MoreHorizontal, Pencil, Plus, Search, Star, Trash2, Upload, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -50,12 +51,11 @@ function SortableGroup({ group, items, onAdd, onEdit, onDelete, onEditIndicator,
 
 export function StructurePage() {
   const store = useIndicators();
-  const [dragReady, setDragReady] = useState(false);
+  const dragReady = useHydrated();
   const [groupModal, setGroupModal] = useState<{ open: boolean; group?: Group }>({ open: false });
   const [indicatorModal, setIndicatorModal] = useState<{ open: boolean; groupId?: string; item?: Indicator }>({ open: false });
   const [deleting, setDeleting] = useState<{ type: "group" | "indicator"; item: Group | Indicator } | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  useEffect(() => setDragReady(true), []);
   const onDragEnd = ({ active, over }: DragEndEvent) => { if (!over || active.id === over.id) return; active.data.current?.type === "group" ? store.reorderGroups(String(active.id), String(over.id)) : store.moveIndicator(String(active.id), String(over.id)); };
   return <>
     <PageTitle eyebrow="Configuração" title="Estrutura do relatório" description="Organize grupos e indicadores. Arraste pelos puxadores para alterar a sequência ou mover um indicador entre grupos." action={<Button onClick={() => setGroupModal({ open: true })}><Plus /> Novo grupo</Button>} />
