@@ -1,0 +1,3 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { ConferencePage } from "@/components/indicator-pages";
+export const Route = createFileRoute("/conferencia")({ head: () => ({ meta: [{ title: "Conferência — RedeFlex" }, { name: "description", content: "Audite indicadores conferidos, sem dado e não mapeados." }, { property: "og:title", content: "Conferência — RedeFlex" }, { property: "og:description", content: "Audite indicadores conferidos, sem dado e não mapeados." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }), component: ConferencePage });

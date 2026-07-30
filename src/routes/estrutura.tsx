@@ -1,0 +1,3 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { StructurePage } from "@/components/indicator-pages";
+export const Route = createFileRoute("/estrutura")({ head: () => ({ meta: [{ title: "Estrutura — RedeFlex" }, { name: "description", content: "Organize grupos e indicadores do relatório RedeFlex." }, { property: "og:title", content: "Estrutura — RedeFlex" }, { property: "og:description", content: "Organize grupos e indicadores do relatório RedeFlex." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }), component: StructurePage });
