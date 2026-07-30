@@ -1,9 +1,9 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, arrayMove, rectSortingStrategy, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, rectSortingStrategy, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { read, utils } from "xlsx";
-import { useMemo, useRef, useState, type FormEvent } from "react";
-import { AlertCircle, ArrowUpRight, CheckCircle2, ChevronDown, ChevronRight, Download, FileSpreadsheet, GripVertical, MoreHorizontal, Pencil, Plus, Search, Star, Trash2, Upload, XCircle } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Download, FileSpreadsheet, GripVertical, MoreHorizontal, Pencil, Plus, Search, Star, Trash2, Upload, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,15 +50,17 @@ function SortableGroup({ group, items, onAdd, onEdit, onDelete, onEditIndicator,
 
 export function StructurePage() {
   const store = useIndicators();
+  const [dragReady, setDragReady] = useState(false);
   const [groupModal, setGroupModal] = useState<{ open: boolean; group?: Group }>({ open: false });
   const [indicatorModal, setIndicatorModal] = useState<{ open: boolean; groupId?: string; item?: Indicator }>({ open: false });
   const [deleting, setDeleting] = useState<{ type: "group" | "indicator"; item: Group | Indicator } | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  useEffect(() => setDragReady(true), []);
   const onDragEnd = ({ active, over }: DragEndEvent) => { if (!over || active.id === over.id) return; active.data.current?.type === "group" ? store.reorderGroups(String(active.id), String(over.id)) : store.moveIndicator(String(active.id), String(over.id)); };
   return <>
     <PageTitle eyebrow="Configuração" title="Estrutura do relatório" description="Organize grupos e indicadores. Arraste pelos puxadores para alterar a sequência ou mover um indicador entre grupos." action={<Button onClick={() => setGroupModal({ open: true })}><Plus /> Novo grupo</Button>} />
     <div className="mb-5 flex items-center gap-3 rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm"><Star className="h-4 w-4 fill-amber-400 text-amber-500" /><span><strong>{store.indicators.filter((item) => item.priority).length} prioritários</strong> aparecem primeiro no relatório e refletem esta ordem.</span></div>
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}><SortableContext items={store.groups.map((group) => group.id)} strategy={rectSortingStrategy}><div className="grid gap-5 xl:grid-cols-2">{store.groups.map((group) => <SortableGroup key={group.id} group={group} items={store.indicators.filter((item) => item.groupId === group.id)} onAdd={() => setIndicatorModal({ open: true, groupId: group.id })} onEdit={() => setGroupModal({ open: true, group })} onDelete={() => setDeleting({ type: "group", item: group })} onEditIndicator={(item) => setIndicatorModal({ open: true, item, groupId: item.groupId })} onDeleteIndicator={(item) => setDeleting({ type: "indicator", item })} />)}</div></SortableContext></DndContext>
+    {dragReady ? <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}><SortableContext items={store.groups.map((group) => group.id)} strategy={rectSortingStrategy}><div className="grid gap-5 xl:grid-cols-2">{store.groups.map((group) => <SortableGroup key={group.id} group={group} items={store.indicators.filter((item) => item.groupId === group.id)} onAdd={() => setIndicatorModal({ open: true, groupId: group.id })} onEdit={() => setGroupModal({ open: true, group })} onDelete={() => setDeleting({ type: "group", item: group })} onEditIndicator={(item) => setIndicatorModal({ open: true, item, groupId: item.groupId })} onDeleteIndicator={(item) => setDeleting({ type: "indicator", item })} />)}</div></SortableContext></DndContext> : <div className="grid gap-5 xl:grid-cols-2">{store.groups.map((group) => <section key={group.id} className="rounded-lg border bg-card p-5"><h2 className="font-bold">{group.name}</h2><p className="text-sm text-muted-foreground">{store.indicators.filter((item) => item.groupId === group.id).length} indicadores</p></section>)}</div>}
     <GroupDialog state={groupModal} onOpenChange={(open) => setGroupModal({ ...groupModal, open })} />
     <IndicatorDialog state={indicatorModal} onOpenChange={(open) => setIndicatorModal({ ...indicatorModal, open })} />
     <Dialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}><DialogContent><DialogHeader><DialogTitle>Excluir {deleting?.type === "group" ? "grupo" : "indicador"}?</DialogTitle><DialogDescription>{deleting?.type === "group" ? `O grupo “${deleting.item.name}” só pode ser excluído se estiver vazio.` : `O indicador “${deleting?.item.name}” será removido da estrutura.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDeleting(null)}>Cancelar</Button><Button variant="destructive" onClick={() => { if (!deleting) return; const ok = deleting.type === "group" ? store.deleteGroup(deleting.item.id) : (store.deleteIndicator(deleting.item.id), true); ok ? toast.success("Item excluído") : toast.error("Realocar os indicadores antes de excluir este grupo."); setDeleting(null); }}>Excluir</Button></DialogFooter></DialogContent></Dialog>
