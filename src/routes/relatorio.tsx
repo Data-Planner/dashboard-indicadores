@@ -1,0 +1,3 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { ReportPage } from "@/components/indicator-pages";
+export const Route = createFileRoute("/relatorio")({ head: () => ({ meta: [{ title: "Relatório de indicadores — RedeFlex" }, { name: "description", content: "Acompanhe prioridades, metas e dados dos indicadores RedeFlex." }, { property: "og:title", content: "Relatório de indicadores — RedeFlex" }, { property: "og:description", content: "Acompanhe prioridades, metas e dados dos indicadores RedeFlex." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }), component: ReportPage });

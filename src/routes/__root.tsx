@@ -8,6 +8,9 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { AppShell } from "@/components/app-shell";
+import { Toaster } from "@/components/ui/sonner";
+import { IndicatorProvider } from "@/lib/indicator-store";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -77,18 +80,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Blank Canvas creates custom 16:9 aspect ratio images for presentations." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Blank Canvas creates custom 16:9 aspect ratio images for presentations." },
+      { title: "RedeFlex" },
+      { name: "description", content: "Gestão de indicadores RedeFlex." },
+      { name: "author", content: "RedeFlex" },
+      { property: "og:title", content: "RedeFlex" },
+      { property: "og:description", content: "Gestão de indicadores RedeFlex." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
-      { name: "twitter:description", content: "Blank Canvas creates custom 16:9 aspect ratio images for presentations." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5ca1b613-8ba1-4ea4-923e-941d6a0cb3ad/id-preview-8f8da026--0b270a14-b422-4870-8932-4b33e79f0d35.lovable.app-1781125620027.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5ca1b613-8ba1-4ea4-923e-941d6a0cb3ad/id-preview-8f8da026--0b270a14-b422-4870-8932-4b33e79f0d35.lovable.app-1781125620027.png" },
+      { name: "twitter:title", content: "RedeFlex" },
+      { name: "twitter:description", content: "Gestão de indicadores RedeFlex." },
     ],
     links: [
       {
@@ -105,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
@@ -122,8 +122,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <IndicatorProvider><AppShell><Outlet /></AppShell><Toaster richColors position="top-right" /></IndicatorProvider>
     </QueryClientProvider>
   );
 }

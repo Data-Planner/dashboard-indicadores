@@ -1,19 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Navigate, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "RedeFlex · Dashboard de Indicadores" },
+      { title: "Gestão de Indicadores — RedeFlex" },
       {
         name: "description",
         content:
-          "Painel de vendas RedeFlex: metas, realizado, projeções e agendamentos importados das suas planilhas.",
+          "Estruture, importe e confira indicadores de gestão da RedeFlex.",
       },
-      { property: "og:title", content: "RedeFlex · Dashboard de Indicadores" },
+      { property: "og:title", content: "Gestão de Indicadores — RedeFlex" },
       {
         property: "og:description",
         content:
-          "Painel de vendas RedeFlex: metas, realizado, projeções e agendamentos importados das suas planilhas.",
+          "Estruture, importe e confira indicadores de gestão da RedeFlex.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -22,12 +22,4 @@ export const Route = createFileRoute("/")({
   component: DashboardPage,
 });
 
-function DashboardPage() {
-  return (
-    <iframe
-      src="/dashboard.html"
-      title="RedeFlex · Dashboard de Indicadores"
-      style={{ position: "fixed", inset: 0, width: "100%", height: "100%", border: "none" }}
-    />
-  );
-}
+function DashboardPage() { return <Navigate to="/estrutura" />; }

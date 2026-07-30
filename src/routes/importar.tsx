@@ -1,0 +1,3 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { ImportPage } from "@/components/indicator-pages";
+export const Route = createFileRoute("/importar")({ head: () => ({ meta: [{ title: "Importar planilha — RedeFlex" }, { name: "description", content: "Importe planilhas de indicadores e confira o casamento automático." }, { property: "og:title", content: "Importar planilha — RedeFlex" }, { property: "og:description", content: "Importe planilhas de indicadores e confira o casamento automático." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }), component: ImportPage });
