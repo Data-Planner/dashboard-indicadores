@@ -2210,24 +2210,24 @@ const CATALOGO_PADRAO = [
   { grupo: 'CHIP', ind: 'Cad. Físico',                    tipo: 'Qtde', meta: [0,0,0,0], obs: 'Não existe meta.' },
 
   /* --- Adquirência ------------------------------------------------------ */
-  { grupo: 'Adquirência', ind: 'Ativações',                       tipo: 'Qtde', meta: [1,1,0,0], obs: 'Meta somente até nível DDD.' },
-  { grupo: 'Adquirência', ind: 'Ativação 5K',                     tipo: 'Qtde', meta: [1,1,0,0], obs: 'Meta somente até nível DDD.' },
-  { grupo: 'Adquirência', ind: 'Consultores Zerados (Ativação)',  tipo: 'Qtde', meta: [0,0,0,0], novo: 1, inverso: 1, obs: 'Será estipulada uma meta?' },
-  { grupo: 'Adquirência', ind: 'Consultores >= 5 (Ativações)',    tipo: '%',    meta: [0,0,0,0], novo: 1, obs: 'Será estipulada uma meta?' },
+  { grupo: 'Adquirência', ind: 'Ativações',                       tipo: 'Qtde', meta: [1,1,1,1] },
+  { grupo: 'Adquirência', ind: 'Ativação 5K',                     tipo: 'Qtde', meta: [1,1,1,1] },
+  { grupo: 'Adquirência', ind: 'Consultores Zerados (Ativação)',  tipo: 'Qtde', meta: [0,0,0,0], inverso: 1 },
+  { grupo: 'Adquirência', ind: 'Consultores >= 5 (Ativações)',    tipo: 'Qtde', meta: [0,0,0,0] },
   { grupo: 'Adquirência', ind: '% POS Parada',                    tipo: '%',    meta: [0,0,0,0], novo: 1, inverso: 1, obs: 'Será estipulada uma meta?' },
   { grupo: 'Adquirência', ind: 'Base 5K',                         tipo: 'Qtde', meta: [1,1,1,1], obs: 'Melhor mês dos últimos 3 meses.' },
   { grupo: 'Adquirência', ind: 'TPV',                             tipo: 'R$',   meta: [1,1,1,1] },
   { grupo: 'Adquirência', ind: 'Base Transancionando',            tipo: 'Qtde', meta: [0,0,0,0], novo: 1, obs: 'Será definida meta?' },
 
   /* --- FlexCred --------------------------------------------------------- */
-  { grupo: 'FlexCred', ind: 'Consultores Sem Indicação',   tipo: 'Qtde', meta: [0,0,0,0], novo: 1, inverso: 1, obs: 'Será definida meta?' },
+  { grupo: 'FlexCred', ind: 'Consultores Sem Indicação',   tipo: 'Qtde', meta: [0,0,0,0], inverso: 1 },
   { grupo: 'FlexCred', ind: '% Consultores com Contrato',  tipo: '%',    meta: [0,0,0,0], novo: 1, obs: 'Será definida meta?' },
   { grupo: 'FlexCred', ind: 'Indicações',                  tipo: 'Qtde', meta: [0,0,0,0], obs: 'Será definida meta?' },
-  { grupo: 'FlexCred', ind: 'Valor Liberado',              tipo: 'R$',   meta: [1,1,1,1], obs: 'Meta do DDD dividida pela quantidade de territórios.' },
+  { grupo: 'FlexCred', ind: 'Valor Liberado',              tipo: 'R$',   meta: [1,1,1,1] },
 
   /* --- Corban ----------------------------------------------------------- */
   { grupo: 'Corban', ind: 'Cadastro Corban', tipo: 'Qtde', meta: [1,1,1,1] },
-  { grupo: 'Corban', ind: 'Código gerado',   tipo: 'Qtde', meta: [1,1,0,0], obs: 'Meta 1 por supervisor.' }
+  { grupo: 'Corban', ind: 'Código gerado',   tipo: 'Qtde', meta: [1,1,1,1] }
 ];
 
 /* ==========================================================================
@@ -2267,6 +2267,21 @@ function garantirIndicadoresChip() {
     const novo = { id: uid(), grupo: 'CHIP', ind: ind, tipo: 'Qtde', meta: [1, 1, 1, 1], foco: false };
     const at = posAbast >= 0 ? posAbast + 1 + i : state.indicadores.length;
     state.indicadores.splice(at, 0, novo);
+  });
+}
+
+/* Migração pontual: navegadores que já tinham o catálogo salvo antes da
+   importação das abas ADQ/FlexCred/Corban precisam do tipo/meta corrigidos
+   (Consultores >= 5 (Ativações) era '%', tem que ser 'Qtde'; Ativações/
+   Ativação 5K/Código gerado agora têm meta por consultor, não só até DDD). */
+function garantirIndicadoresAdqFlexCorban() {
+  const corrigirTipo = { 'Consultores >= 5 (Ativações)': 'Qtde' };
+  const corrigirMeta = {
+    'Ativações': [1, 1, 1, 1], 'Ativação 5K': [1, 1, 1, 1], 'Código gerado': [1, 1, 1, 1]
+  };
+  state.indicadores.forEach(function (c) {
+    if (corrigirTipo[c.ind]) c.tipo = corrigirTipo[c.ind];
+    if (corrigirMeta[c.ind]) c.meta = corrigirMeta[c.ind].slice();
   });
 }
 
@@ -3378,7 +3393,14 @@ const ALIASES_EQUIPE = {
   supervisor: ['supervisor'],
   vendedor:  ['vendedor'],
   chave:     ['chave'],
-  situacao:  ['situacao']
+  situacao:  ['situacao'],
+  /* Metas por consultor que só existem na aba Equipe (não vêm nas abas
+     ADQ/Corban) — viram registros de "Ativações"/"Cadastro Corban"/
+     "Código gerado" com meta preenchida e real em branco; o real de cada
+     um vem de outra aba e a soma acontece independente, por indicador. */
+  adqMetaAtivacao5k: ['adq meta ativacao 5k'],
+  corbanMetaCadastro: ['corban meta cadastro'],
+  corbanMetaCodigo:  ['corban meta codigo']
 };
 
 function classificarCabecalhoEquipe(txt) {
@@ -3392,7 +3414,7 @@ function classificarCabecalhoEquipe(txt) {
 
 function processarPlanilhaEquipe(ws, fid, refPeriodo) {
   const m = matrizSimples(ws);
-  if (!m.length) return { linhas: 0 };
+  if (!m.length) return { linhas: 0, registros: [] };
 
   let hdrRow = -1, hdrScore = 0, hdrMap = null;
   const limite = Math.min(m.length, 20);
@@ -3404,12 +3426,13 @@ function processarPlanilhaEquipe(ws, fid, refPeriodo) {
     });
     if (score > hdrScore) { hdrScore = score; hdrRow = R; hdrMap = map; }
   }
-  if (hdrRow < 0 || !hdrMap || hdrMap.vendedor === undefined || hdrMap.diretoria === undefined) return { linhas: 0 };
+  if (hdrRow < 0 || !hdrMap || hdrMap.vendedor === undefined || hdrMap.diretoria === undefined) return { linhas: 0, registros: [] };
 
   const padrao = refPeriodo || { ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 };
   const mesAno = padrao.ano + '-' + String(padrao.mes).padStart(2, '0');
 
   let linhas = 0, vazias = 0;
+  const registros = [];
   for (let R = hdrRow + 1; R < m.length; R++) {
     const row = m[R];
     const nome = row[hdrMap.vendedor];
@@ -3430,8 +3453,22 @@ function processarPlanilhaEquipe(ws, fid, refPeriodo) {
       supervisor: val('supervisor'), gerente: val('gerente'), territorio: val('dddGestao'), ddd: val('diretoria')
     });
     linhas++;
+
+    const base = { dArquivo: val('diretoria'), gArquivo: val('gerente'), sArquivo: val('supervisor'), v: val('vendedor'), fid: fid, ano: padrao.ano, mes: padrao.mes, sem: null, base: null };
+    const metaNum = function (campo) {
+      if (hdrMap[campo] === undefined) return null;
+      const v = row[hdrMap[campo]];
+      if (v == null || v === '') return null;
+      return typeof v === 'number' ? v : parseNumeroBR(v);
+    };
+    const adqMeta = metaNum('adqMetaAtivacao5k');
+    if (adqMeta != null) registros.push(Object.assign({}, base, { grp: 'Adquirência', ind: 'Ativações', meta: adqMeta, real: null }));
+    const corbanMetaCad = metaNum('corbanMetaCadastro');
+    if (corbanMetaCad != null) registros.push(Object.assign({}, base, { grp: 'Corban', ind: 'Cadastro Corban', meta: corbanMetaCad, real: null }));
+    const corbanMetaCod = metaNum('corbanMetaCodigo');
+    if (corbanMetaCod != null) registros.push(Object.assign({}, base, { grp: 'Corban', ind: 'Código gerado', meta: corbanMetaCod, real: null }));
   }
-  return { linhas: linhas };
+  return { linhas: linhas, registros: registros };
 }
 
 async function importarHierarquia(fileList) {
@@ -3459,6 +3496,7 @@ async function importarHierarquia(fileList) {
         if (norm(nome) === 'equipe') {
           const re = processarPlanilhaEquipe(wb.Sheets[nome], fid, refPeriodo);
           linhasArquivo += re.linhas;
+          if (re.registros.length) state.records.push.apply(state.records, re.registros);
           return;
         }
         const r = processarPlanilhaHie(wb.Sheets[nome], fid, refPeriodo);
@@ -3489,6 +3527,9 @@ function excluirBase(id, silencioso) {
   state.bases = state.bases.filter(function (b) { return b.id !== id; });
   if (base.tipo === 'Hierarquia') {
     state.hierarquia = state.hierarquia.filter(function (h) { return h.fid !== base.fid; });
+    /* A aba Equipe também gera registros de meta (Ativações/Cadastro Corban/
+       Código gerado) junto com a hierarquia — precisam sumir juntos. */
+    state.records = state.records.filter(function (r) { return r.fid !== base.fid; });
     _hieVersion++;
   } else if (base.tipo === 'Vendas') {
     state.records = state.records.filter(function (r) { return r.fid !== base.fid; });
@@ -4328,6 +4369,125 @@ function processarPlanilhaChip(nomeAba, ws, fid, refNome) {
   return res;
 }
 
+/* Planilhas "ADQ" / "FlexCred" / "Corban" — mesmo formato da "Chip" (uma
+   linha por vendedor, colunas DDDGestao/Gerente/Supervisor/Vendedor/Chave +
+   colunas de dado), só que sem coluna de operadora. A meta de "Ativações"
+   (ADQ), "Cadastro Corban" e "Código gerado" não vem dessas abas — vem da
+   aba "Equipe" (processarPlanilhaEquipe), por isso essas três só empurram
+   o valor realizado aqui. */
+const ALIASES_ADQ = {
+  diretoria: ['dddgestao', 'ddd gestao'],
+  gerente:   ['gerente'],
+  supervisor: ['supervisor'],
+  vendedor:  ['vendedor'],
+  realAtivacaoTotal: ['adq real ativacao total'],
+  realAtivacao5k:    ['adq real ativacao 5k'],
+  metaAtivacao5k:    ['adq meta ativacao 5k'],
+  realTpvSemPix:     ['adq real tpv sem pix'],
+  metaTpvSemPix:     ['adq meta tpv sem pix']
+};
+
+function classificarCabecalhoGenerico(aliases, txt) {
+  const n = norm(txt);
+  if (!n) return null;
+  for (const campo in aliases) {
+    if (aliases[campo].indexOf(n) >= 0) return campo;
+  }
+  return null;
+}
+
+function processarPlanilhaSimples(nomeAba, ws, fid, refNome, aliases, grupo, montarPushes) {
+  const res = { records: [], warnings: [], linhas: 0 };
+  const m = matrizDaPlanilha(ws);
+  if (!m.length) return res;
+
+  let hdrRow = -1, hdrScore = 0, hdrMap = null;
+  const limite = Math.min(m.length, 25);
+  for (let R = 0; R < limite; R++) {
+    const map = {};
+    let score = 0;
+    m[R].forEach(function (cell, C) {
+      if (!cell || cell.v == null) return;
+      const campo = classificarCabecalhoGenerico(aliases, cell.v);
+      if (campo && map[campo] === undefined) { map[campo] = C; score += 1; }
+    });
+    if (score > hdrScore) { hdrScore = score; hdrRow = R; hdrMap = map; }
+  }
+  const camposDado = Object.keys(aliases).filter(function (k) { return k !== 'diretoria' && k !== 'gerente' && k !== 'supervisor' && k !== 'vendedor'; });
+  const temColunaDado = hdrMap && camposDado.some(function (c) { return hdrMap[c] !== undefined; });
+  if (hdrRow < 0 || !hdrMap || hdrMap.vendedor === undefined || !temColunaDado) return res;
+
+  const padrao = refNome || { ano: new Date().getFullYear(), mes: new Date().getMonth() + 1 };
+
+  let vazias = 0;
+  for (let R = hdrRow + 1; R < m.length; R++) {
+    const row = m[R];
+    const cVend = row[hdrMap.vendedor];
+    const nomeVend = cVend && cVend.v != null ? String(cVend.v).trim() : '';
+    if (!nomeVend) { if (++vazias > 25) break; continue; }
+    vazias = 0;
+
+    const tx = function (campo) {
+      if (hdrMap[campo] === undefined) return '';
+      const c = row[hdrMap[campo]];
+      return c && c.v != null ? String(c.v).trim() : '';
+    };
+    const num = function (campo) { return hdrMap[campo] !== undefined ? lerValor(row[hdrMap[campo]], false) : null; };
+    const base = { dArquivo: tx('diretoria'), gArquivo: tx('gerente'), sArquivo: tx('supervisor'), v: nomeVend, grp: grupo, fid: fid };
+
+    const push = function (ind, meta, real) {
+      if (meta == null && real == null) return;
+      res.records.push(Object.assign({}, base, { ind: ind, ano: padrao.ano, mes: padrao.mes, sem: null, meta: meta, real: real, base: null }));
+      res.linhas++;
+    };
+    montarPushes(push, num);
+  }
+  return res;
+}
+
+function processarPlanilhaAdq(nomeAba, ws, fid, refNome) {
+  return processarPlanilhaSimples(nomeAba, ws, fid, refNome, ALIASES_ADQ, 'Adquirência', function (push, num) {
+    push('Ativações', null, num('realAtivacaoTotal'));
+    push('Ativação 5K', num('metaAtivacao5k'), num('realAtivacao5k'));
+    push('TPV', num('metaTpvSemPix'), num('realTpvSemPix'));
+  });
+}
+
+const ALIASES_FLEXCRED = {
+  diretoria: ['dddgestao', 'ddd gestao'],
+  gerente:   ['gerente'],
+  supervisor: ['supervisor'],
+  vendedor:  ['vendedor'],
+  realIndicacao:     ['flexcred real indicacao'],
+  realValorLiberado: ['flexcred real valor liberado'],
+  metaValorLiberado: ['flexcred meta valor liberado']
+};
+
+function processarPlanilhaFlexCred(nomeAba, ws, fid, refNome) {
+  return processarPlanilhaSimples(nomeAba, ws, fid, refNome, ALIASES_FLEXCRED, 'FlexCred', function (push, num) {
+    push('Valor Liberado', num('metaValorLiberado'), num('realValorLiberado'));
+    /* Carregador interno (não é um indicador do catálogo) só pra "Consultores
+       Sem Indicação" contar, por consultor, quem tem indicação zerada. */
+    push('FlexCred_Real_Indicacao', null, num('realIndicacao'));
+  });
+}
+
+const ALIASES_CORBAN = {
+  diretoria: ['dddgestao', 'ddd gestao'],
+  gerente:   ['gerente'],
+  supervisor: ['supervisor'],
+  vendedor:  ['vendedor'],
+  realCodigo:   ['corban real codigo'],
+  realCadastro: ['corban real cadastro']
+};
+
+function processarPlanilhaCorban(nomeAba, ws, fid, refNome) {
+  return processarPlanilhaSimples(nomeAba, ws, fid, refNome, ALIASES_CORBAN, 'Corban', function (push, num) {
+    push('Cadastro Corban', null, num('realCadastro'));
+    push('Código gerado', null, num('realCodigo'));
+  });
+}
+
 function processarPlanilhaVendas(nomeAba, ws, fid, refNome) {
   const res = { records: [], warnings: [], naoReconhecidos: new Set(), linhas: 0 };
   const m = matrizDaPlanilha(ws);
@@ -4477,6 +4637,18 @@ async function importarVendas(fileList) {
           const rc = processarPlanilhaChip(nome, wb.Sheets[nome], fid, refNome);
           recs.push.apply(recs, rc.records);
           warnings.push.apply(warnings, rc.warnings);
+        }
+        if (norm(nome) === 'adq') {
+          const ra = processarPlanilhaAdq(nome, wb.Sheets[nome], fid, refNome);
+          recs.push.apply(recs, ra.records);
+        }
+        if (norm(nome) === 'flexcred') {
+          const rf = processarPlanilhaFlexCred(nome, wb.Sheets[nome], fid, refNome);
+          recs.push.apply(recs, rf.records);
+        }
+        if (norm(nome) === 'corban') {
+          const rcb = processarPlanilhaCorban(nome, wb.Sheets[nome], fid, refNome);
+          recs.push.apply(recs, rcb.records);
         }
       });
 
@@ -4932,6 +5104,36 @@ function agregar() {
       metaDia: mesMetaPct
     });
   }
+
+  /* Mesma lógica de indicador calculado por consultor, generalizada: conta,
+     dentre os consultores do indicador "carregador" (respeitando o filtro
+     da tela), quantos batem uma condição sobre o valor realizado somado. */
+  function contarConsultoresPorCondicao(indCarrier, condicao, ano, mes) {
+    const porVendedor = new Map();
+    recs.forEach(function (r) {
+      /* r.real == null descarta os registros "carregadores" de meta que vêm
+         só da aba Equipe (ex.: meta de Ativações) — a contagem é só de quem
+         de fato tem linha de realizado na aba de origem do indicador. */
+      if (r.ind !== indCarrier || r.ano !== ano || r.mes !== mes || r.real == null) return;
+      const nome = efetivo(r).nome || r.v || '';
+      if (!nome) return;
+      porVendedor.set(nome, (porVendedor.get(nome) || 0) + r.real);
+    });
+    let total = 0;
+    porVendedor.forEach(function (v) { if (condicao(v)) total++; });
+    return total;
+  }
+  function aplicarContagemConsultores(indAlvo, indCarrier, condicao) {
+    const idx = linhas.findIndex(function (l) { return l.cat.ind === indAlvo; });
+    if (idx < 0 || !ref) return;
+    linhas[idx] = Object.assign({}, linhas[idx], {
+      hist: meses.map(function (mc) { return contarConsultoresPorCondicao(indCarrier, condicao, mc.ano, mc.mes); }),
+      mesReal: contarConsultoresPorCondicao(indCarrier, condicao, ref.ano, ref.mes)
+    });
+  }
+  aplicarContagemConsultores('Consultores Zerados (Ativação)', 'Ativações', function (v) { return v === 0; });
+  aplicarContagemConsultores('Consultores >= 5 (Ativações)', 'Ativações', function (v) { return v >= 5; });
+  aplicarContagemConsultores('Consultores Sem Indicação', 'FlexCred_Real_Indicacao', function (v) { return v === 0; });
 
   /* Contexto exibido no resumo: se a seleção cai num único DDD, mostra o
      calendário dele; com vários (ou nenhum), mostra o nacional como
@@ -5453,6 +5655,7 @@ function init() {
   carregar();
   garantirCatalogoPadrao();
   garantirIndicadoresChip();
+  garantirIndicadoresAdqFlexCorban();
   rebuildCatIndex();
   definirRefPadrao(false);
   definirMesHiePadrao(false);
