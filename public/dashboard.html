@@ -1031,6 +1031,76 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
   .rf-welcome-foot .btn { width: 100%; justify-content: center; }
 }
 
+/* ==========================================================================
+   Aba "Indicadores" (Painel Administrativo) — agrupadores + indicadores
+   ========================================================================== */
+.ind-toolbar { padding: 14px 20px; margin-bottom: var(--sp-4); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ind-kpis { font-size: var(--fs-sm); color: var(--text-muted); }
+.ind-kpis strong { color: var(--text); }
+
+.ind-group-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+  margin-bottom: var(--sp-4);
+}
+.ind-group-head {
+  background: linear-gradient(95deg, var(--rf-bordo) 0%, var(--rf-bordo-dark) 100%);
+  color: #fff;
+  padding: 10px var(--sp-4);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: grab;
+}
+.ind-group-head:active { cursor: grabbing; }
+.ind-group-head .btn-ghost { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.35); }
+.ind-group-head .btn-ghost:hover { background: rgba(255,255,255,.22); }
+.ind-group-head .btn-danger-ghost { background: rgba(255,255,255,.1); color: #FFE1E1; border-color: rgba(255,255,255,.35); }
+.ind-group-head .btn-danger-ghost:hover { background: rgba(220,38,38,.35); }
+.ind-group-name { font-size: var(--fs-lg); font-weight: 700; letter-spacing: .3px; }
+
+.ind-list { display: flex; flex-direction: column; }
+.ind-row {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 9px var(--sp-4);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface);
+}
+.ind-row:last-child { border-bottom: none; }
+.ind-row:hover { background: var(--surface-alt); }
+.ind-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ind-row-main strong { font-size: var(--fs-md); color: var(--text); }
+.ind-row-sub { font-size: var(--fs-xs); color: var(--text-muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ind-empty { padding: 18px var(--sp-4); font-size: var(--fs-sm); color: var(--text-faint); text-align: center; }
+.ind-add-btn { margin: var(--sp-2); width: calc(100% - 2 * var(--sp-2)); justify-content: center; }
+
+.drag-handle { cursor: grab; color: inherit; opacity: .6; padding: 2px 4px; }
+.drag-handle:active { cursor: grabbing; }
+.ind-group-head .drag-handle { color: #fff; }
+
+.ind-star {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 17px; line-height: 1; color: var(--line);
+  padding: 2px 4px; transition: color .15s, transform .15s;
+}
+.ind-star:hover { transform: scale(1.15); }
+.ind-star.is-active { color: #F5A623; }
+
+.ind-meta-niveis { display: flex; flex-wrap: wrap; gap: 4px 14px; padding-top: 6px; }
+.ind-nivel-chk { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--text); cursor: pointer; }
+.ind-nivel-chk input { width: 15px; height: 15px; cursor: pointer; }
+
+.group-card-destaque .group-head { background: linear-gradient(95deg, #B8860B 0%, #8a6508 100%); }
+.ind-foco-marca { color: #F5A623; margin-right: 4px; }
+
+@media (max-width: 640px) {
+  .ind-row { flex-wrap: wrap; }
+  .ind-row-main { order: 10; flex-basis: 100%; }
+}
+
 </style>
 </head>
 <body>
@@ -1158,6 +1228,77 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
 </div>
 
 <!-- ======================================================================
+     Modal: novo/editar agrupador de indicadores
+     ====================================================================== -->
+<div class="hie-modal" id="grp-modal" hidden role="dialog" aria-modal="true" aria-labelledby="grp-modal-titulo">
+  <div class="hie-modal-card">
+    <div class="hie-modal-head" id="grp-modal-titulo">Novo agrupador</div>
+    <div class="hie-modal-body">
+      <input type="hidden" id="grp-edit-nome-original">
+      <div class="field">
+        <label for="grp-nome">Nome do agrupador</label>
+        <input type="text" id="grp-nome" placeholder="Ex.: CHIP">
+      </div>
+    </div>
+    <div class="hie-modal-foot">
+      <button class="btn btn-ghost" id="grp-cancelar">Cancelar</button>
+      <button class="btn btn-primary" id="grp-salvar">Salvar agrupador</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================================
+     Modal: novo/editar indicador
+     ====================================================================== -->
+<div class="hie-modal" id="ind-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ind-modal-titulo">
+  <div class="hie-modal-card" style="max-width:560px;">
+    <div class="hie-modal-head" id="ind-modal-titulo">Novo indicador</div>
+    <div class="hie-modal-body">
+      <input type="hidden" id="ind-edit-id">
+      <div class="hie-modal-row">
+        <div class="field field-grow">
+          <label for="ind-nome">Nome do indicador</label>
+          <input type="text" id="ind-nome" placeholder="Ex.: Abastecimento">
+        </div>
+        <div class="field">
+          <label for="ind-grupo">Agrupador</label>
+          <select id="ind-grupo"></select>
+        </div>
+      </div>
+      <div class="hie-modal-row">
+        <div class="field">
+          <label for="ind-tipo">Tipo</label>
+          <select id="ind-tipo">
+            <option value="%">%</option>
+            <option value="Qtde">Qtde</option>
+            <option value="R$">R$</option>
+          </select>
+        </div>
+        <div class="field field-grow">
+          <label>Possui meta em</label>
+          <div class="ind-meta-niveis" id="ind-meta-niveis"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="ind-obs">Observação</label>
+        <input type="text" id="ind-obs" placeholder="Opcional">
+      </div>
+      <div class="hie-modal-row" style="align-items:center;flex-wrap:wrap;">
+        <label class="hie-lote-label"><input type="checkbox" id="ind-novo"> Marcar como [NOVO]</label>
+        <label class="hie-lote-label"><input type="checkbox" id="ind-inverso"> Quanto menor, melhor</label>
+        <label class="hie-lote-label"><input type="checkbox" id="ind-foco"> ★ Indicador foco</label>
+      </div>
+      <p class="hie-modal-hint">Indicador foco aparece no bloco do seu agrupador e também em um bloco extra
+         ("★ Indicadores em foco"), no topo do relatório.</p>
+    </div>
+    <div class="hie-modal-foot">
+      <button class="btn btn-ghost" id="ind-cancelar">Cancelar</button>
+      <button class="btn btn-primary" id="ind-salvar">Salvar indicador</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================================
      Header — nível 1: Relatórios  ·  Painel Administrativo
      ====================================================================== -->
 <header class="rf-header">
@@ -1178,6 +1319,7 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
   <button class="rf-subnav-item" data-tab="calendario"><span class="ico">▦</span>Calendário</button>
   <button class="rf-subnav-item" data-tab="feriados"><span class="ico">✕</span>Feriados por DDD</button>
   <button class="rf-subnav-item" data-tab="hierarquia"><span class="ico">▤</span>Hierarquia</button>
+  <button class="rf-subnav-item" data-tab="indicadores"><span class="ico">☆</span>Indicadores</button>
   <button class="rf-subnav-item" data-tab="bases"><span class="ico">▥</span>Bases importadas</button>
   <button class="rf-subnav-item" data-tab="agendamento"><span class="ico">◷</span>Agendamento</button>
 </nav>
@@ -1325,6 +1467,28 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
           </table>
         </div>
       </div>
+    </section>
+
+    <!-- Cadastro 3-bis: Indicadores (agrupadores + indicadores do Dashboard) -->
+    <section class="panel" id="tab-indicadores">
+      <div class="section-head">
+        <h1>Indicadores</h1>
+        <p>Organize os agrupadores e indicadores exibidos no Dashboard, em Relatórios. Arraste pelo ⠿ ou use as
+           setas para reordenar. Marque um indicador como <strong>★ foco</strong> para destacá-lo também em um
+           bloco extra, no topo do relatório — sem removê-lo do agrupador de origem.</p>
+      </div>
+
+      <div class="card ind-toolbar">
+        <span class="ind-kpis">
+          <strong id="ind-kpi-grupos">0</strong> agrupador(es) ·
+          <strong id="ind-kpi-total">0</strong> indicador(es) ·
+          <strong id="ind-kpi-foco">0</strong> em foco
+        </span>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary" id="btn-novo-grupo">+ Novo agrupador</button>
+      </div>
+
+      <div id="ind-grupos-wrap"></div>
     </section>
 
     <!-- Cadastro 4: Bases importadas (Hierarquia + Vendas, unificadas) -->
@@ -1492,7 +1656,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
    ========================================================================== */
 
 /* Ordem dos cartões, igual à ordem dos blocos da planilha. */
-const GRUPOS = ['CHIP', 'Adquirência', 'FlexCred', 'Corban'];
+const GRUPOS_PADRAO = ['CHIP', 'Adquirência', 'FlexCred', 'Corban'];
 
 /* Níveis hierárquicos = colunas P, Q, R, S da aba "Tela".
    A planilha chama o 4º nível de "Consultor"; o painel usa o rótulo "Vendedor". */
@@ -1508,7 +1672,7 @@ const NIVEIS = [
  *  inverso: quanto menor, melhor (usado no semáforo caso uma meta seja definida)
  *  obs: coluna T (Observação)
  */
-const CATALOGO = [
+const CATALOGO_PADRAO = [
   /* --- CHIP ------------------------------------------------------------- */
   { grupo: 'CHIP', ind: 'Abastecimento',                  tipo: '%',    meta: [1,1,1,1] },
   { grupo: 'CHIP', ind: '% Consultores >= 100%',          tipo: '%',    meta: [0,0,0,0], novo: 1, obs: 'Será estipulada uma meta?' },
@@ -1538,6 +1702,23 @@ const CATALOGO = [
   { grupo: 'Corban', ind: 'Cadastro Corban', tipo: 'Qtde', meta: [1,1,1,1] },
   { grupo: 'Corban', ind: 'Código gerado',   tipo: 'Qtde', meta: [1,1,0,0], obs: 'Meta 1 por supervisor.' }
 ];
+
+/* ==========================================================================
+   Indicadores e Agrupadores — cadastro editável (Painel Administrativo)
+   GRUPOS_PADRAO/CATALOGO_PADRAO acima são só o valor de fábrica, usado na
+   primeira execução do navegador. A partir daí, quem manda é state.grupos e
+   state.indicadores (editáveis na aba "Indicadores" e persistidos como o
+   resto do Painel Administrativo).
+   ========================================================================== */
+
+function garantirCatalogoPadrao() {
+  if (!state.grupos.length && !state.indicadores.length) {
+    state.grupos = GRUPOS_PADRAO.slice();
+    state.indicadores = CATALOGO_PADRAO.map(function (c) {
+      return Object.assign({ id: uid(), foco: false }, c, { meta: c.meta.slice() });
+    });
+  }
+}
 
 /* Grafias alternativas aceitas na importação (chave normalizada -> indicador do catálogo). */
 const ALIAS_INDICADOR = {
@@ -1864,6 +2045,13 @@ const state = {
   area: 'admin',
   tab: 'calendario',
 
+  /* Estrutura de indicadores (editável em Painel Administrativo → Indicadores).
+     grupos: nomes na ordem de exibição. indicadores: catálogo editável —
+     grupo (nome do agrupador), ind (nome, chave de casamento na importação),
+     tipo, meta[4], novo, inverso, obs, foco (aparece também no bloco extra). */
+  grupos: [],
+  indicadores: [],
+
   /* Relatórios — Dashboard Indicadores */
   records: [],        // { v, dArquivo, gArquivo, sArquivo, grp, ind, ano, mes, sem, meta, real, base, fid }
   filtros: { diretoria: '', gerente: '', supervisor: '', vendedor: '' },
@@ -1887,7 +2075,8 @@ function salvar() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       ver: 1, dict: dict, recs: recs,
       bases: state.bases, feriados: state.feriados,
-      hierarquia: state.hierarquia, agendamentos: state.agendamentos
+      hierarquia: state.hierarquia, agendamentos: state.agendamentos,
+      grupos: state.grupos, indicadores: state.indicadores
     }));
     state.persistOk = true;
   } catch (e) {
@@ -1912,6 +2101,8 @@ function carregar() {
     state.feriados = o.feriados || [];
     state.hierarquia = o.hierarquia || [];
     state.agendamentos = o.agendamentos || [];
+    state.grupos = o.grupos || [];
+    state.indicadores = o.indicadores || [];
   } catch (e) { /* estado corrompido: começa vazio */ }
 }
 
@@ -1984,7 +2175,7 @@ function toast(msg, tipo) {
    Nível 2 (subnav, fundo claro): cada cadastro, sempre em sua própria aba
    ========================================================================== */
 
-const ABAS_ADMIN = ['calendario', 'feriados', 'hierarquia', 'bases', 'agendamento'];
+const ABAS_ADMIN = ['calendario', 'feriados', 'hierarquia', 'indicadores', 'bases', 'agendamento'];
 
 function irParaArea(area) {
   state.area = area;
@@ -2155,6 +2346,262 @@ function excluirFeriado(id) {
   salvar();
   renderCalendarioEFeriados();
   toast('Registro excluído.');
+}
+
+/* ==========================================================================
+   7-bis. Indicadores — cadastro editável de agrupadores e indicadores
+   Reflete direto no Dashboard (aba Relatórios): cada agrupador continua
+   sendo um bloco separado (mesmo layout/CSS de sempre) e um indicador
+   marcado como "foco" aparece no seu bloco normal E também em um bloco
+   extra, no topo do relatório.
+   ========================================================================== */
+
+function renderIndicadoresAdmin() {
+  if (!$('#ind-grupos-wrap')) return;
+
+  $('#ind-kpi-grupos').textContent = state.grupos.length;
+  $('#ind-kpi-total').textContent = state.indicadores.length;
+  $('#ind-kpi-foco').textContent = state.indicadores.filter(function (x) { return x.foco; }).length;
+
+  const wrap = $('#ind-grupos-wrap');
+  if (!state.grupos.length) {
+    wrap.innerHTML =
+      '<div class="card"><div class="empty-state">' +
+      '<div class="es-icon">☆</div>' +
+      '<div class="es-title">Nenhum agrupador cadastrado</div>' +
+      '<div class="es-sub">Crie o primeiro agrupador para começar a organizar os indicadores do relatório.</div>' +
+      '<div class="dz-actions"><button class="btn btn-primary" data-act="add-grupo">+ Novo agrupador</button></div>' +
+      '</div></div>';
+    return;
+  }
+
+  wrap.innerHTML = state.grupos.map(function (g, gi) {
+    const itens = state.indicadores.filter(function (x) { return x.grupo === g; });
+
+    const linhas = itens.map(function (it, ii) {
+      const niveis = NIVEIS.filter(function (n, k) { return it.meta[k]; }).map(function (n) { return n.label; }).join(', ') || 'sem meta';
+      const badges =
+        (it.novo ? '<span class="badge-tipo is-normal">NOVO</span>' : '') +
+        (it.inverso ? '<span class="badge-tipo is-feriado">menor é melhor</span>' : '');
+      return (
+        '<div class="ind-row" draggable="true" data-id="' + esc(it.id) + '">' +
+          '<span class="drag-handle" title="Arrastar para reordenar">⠿</span>' +
+          '<button class="ind-star' + (it.foco ? ' is-active' : '') + '" data-act="toggle-foco" data-id="' + esc(it.id) + '" title="' + (it.foco ? 'Remover foco' : 'Marcar como foco (aparece também no bloco extra)') + '">★</button>' +
+          '<div class="ind-row-main">' +
+            '<strong>' + esc(it.ind) + '</strong>' +
+            '<span class="ind-row-sub">' + esc(it.tipo) + ' · Meta: ' + esc(niveis) + ' ' + badges + '</span>' +
+          '</div>' +
+          '<button class="btn btn-ghost btn-sm" data-act="mover-ind-up" data-id="' + esc(it.id) + '" title="Mover para cima"' + (ii === 0 ? ' disabled' : '') + '>↑</button>' +
+          '<button class="btn btn-ghost btn-sm" data-act="mover-ind-down" data-id="' + esc(it.id) + '" title="Mover para baixo"' + (ii === itens.length - 1 ? ' disabled' : '') + '>↓</button>' +
+          '<button class="btn btn-ghost btn-sm" data-act="editar-ind" data-id="' + esc(it.id) + '" title="Editar">✎</button>' +
+          '<button class="btn btn-danger-ghost btn-sm" data-act="excluir-ind" data-id="' + esc(it.id) + '" title="Excluir">✕</button>' +
+        '</div>'
+      );
+    }).join('') || '<div class="ind-empty">Nenhum indicador neste agrupador ainda.</div>';
+
+    return (
+      '<section class="ind-group-card">' +
+        '<div class="ind-group-head" draggable="true" data-grupo="' + esc(g) + '">' +
+          '<span class="drag-handle" title="Arrastar para reordenar">⠿</span>' +
+          '<span class="ind-group-name">' + esc(g) + '</span>' +
+          '<span class="chip chip-onbrand">' + itens.length + (itens.length === 1 ? ' indicador' : ' indicadores') + '</span>' +
+          '<span style="flex:1"></span>' +
+          '<button class="btn btn-ghost btn-sm" data-act="mover-grupo-up" data-grupo="' + esc(g) + '" title="Mover para cima"' + (gi === 0 ? ' disabled' : '') + '>↑</button>' +
+          '<button class="btn btn-ghost btn-sm" data-act="mover-grupo-down" data-grupo="' + esc(g) + '" title="Mover para baixo"' + (gi === state.grupos.length - 1 ? ' disabled' : '') + '>↓</button>' +
+          '<button class="btn btn-ghost btn-sm" data-act="editar-grupo" data-grupo="' + esc(g) + '" title="Editar agrupador">✎</button>' +
+          '<button class="btn btn-danger-ghost btn-sm" data-act="excluir-grupo" data-grupo="' + esc(g) + '" title="Excluir agrupador">✕</button>' +
+        '</div>' +
+        '<div class="ind-list" data-grupo="' + esc(g) + '">' + linhas + '</div>' +
+        '<button class="btn btn-ghost ind-add-btn" data-act="add-indicador" data-grupo="' + esc(g) + '">+ Adicionar indicador</button>' +
+      '</section>'
+    );
+  }).join('');
+}
+
+/* --- Agrupadores --- */
+
+function abrirModalGrupo(nomeExistente) {
+  $('#grp-edit-nome-original').value = nomeExistente || '';
+  $('#grp-nome').value = nomeExistente || '';
+  $('#grp-modal-titulo').textContent = nomeExistente ? 'Editar agrupador' : 'Novo agrupador';
+  $('#grp-modal').hidden = false;
+  $('#grp-nome').focus();
+}
+
+function fecharModalGrupo() { $('#grp-modal').hidden = true; }
+
+function salvarGrupo() {
+  const nomeOriginal = $('#grp-edit-nome-original').value;
+  const nome = $('#grp-nome').value.trim();
+  if (!nome) { toast('Informe o nome do agrupador.', 'bad'); return; }
+  const duplicado = state.grupos.some(function (g) { return norm(g) === norm(nome) && g !== nomeOriginal; });
+  if (duplicado) { toast('Já existe um agrupador com esse nome.', 'bad'); return; }
+
+  if (nomeOriginal) {
+    const idx = state.grupos.indexOf(nomeOriginal);
+    if (idx >= 0) state.grupos[idx] = nome;
+    state.indicadores.forEach(function (it) { if (it.grupo === nomeOriginal) it.grupo = nome; });
+    toast('Agrupador atualizado.');
+  } else {
+    state.grupos.push(nome);
+    toast('Agrupador criado.');
+  }
+  salvar();
+  rebuildCatIndex();
+  fecharModalGrupo();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
+}
+
+function excluirGrupo(nome) {
+  const temIndicadores = state.indicadores.some(function (it) { return it.grupo === nome; });
+  if (temIndicadores) { toast('Mova ou exclua os indicadores deste agrupador antes de excluí-lo.', 'bad'); return; }
+  if (!confirm('Excluir o agrupador "' + nome + '"?')) return;
+  state.grupos = state.grupos.filter(function (g) { return g !== nome; });
+  salvar();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
+  toast('Agrupador excluído.');
+}
+
+function moverGrupo(nome, dir) {
+  const idx = state.grupos.indexOf(nome);
+  const j = idx + dir;
+  if (idx < 0 || j < 0 || j >= state.grupos.length) return;
+  const tmp = state.grupos[j];
+  state.grupos[j] = state.grupos[idx];
+  state.grupos[idx] = tmp;
+  salvar();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
+}
+
+function moverGrupoPara(nomeOrigem, nomeAlvo) {
+  if (nomeOrigem === nomeAlvo) return;
+  const from = state.grupos.indexOf(nomeOrigem);
+  const to = state.grupos.indexOf(nomeAlvo);
+  if (from < 0 || to < 0) return;
+  state.grupos.splice(from, 1);
+  state.grupos.splice(to, 0, nomeOrigem);
+  salvar();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
+}
+
+/* --- Indicadores --- */
+
+function preencherSelectGrupoIndicador(selecionado) {
+  $('#ind-grupo').innerHTML = state.grupos.map(function (g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('');
+  $('#ind-grupo').value = selecionado || state.grupos[0] || '';
+}
+
+function preencherNiveisIndicador(meta) {
+  $('#ind-meta-niveis').innerHTML = NIVEIS.map(function (n, i) {
+    return '<label class="ind-nivel-chk"><input type="checkbox" data-nivel="' + i + '"' + (meta && meta[i] ? ' checked' : '') + '> ' + esc(n.label) + '</label>';
+  }).join('');
+}
+
+function abrirModalIndicador(grupoPadrao, id) {
+  if (!state.grupos.length) { toast('Crie um agrupador antes de cadastrar um indicador.', 'bad'); return; }
+  const item = id ? state.indicadores.find(function (x) { return x.id === id; }) : null;
+  $('#ind-edit-id').value = id || '';
+  $('#ind-modal-titulo').textContent = item ? 'Editar indicador' : 'Novo indicador';
+  $('#ind-nome').value = item ? item.ind : '';
+  preencherSelectGrupoIndicador(item ? item.grupo : grupoPadrao);
+  $('#ind-tipo').value = item ? item.tipo : '%';
+  preencherNiveisIndicador(item ? item.meta : [0, 0, 0, 0]);
+  $('#ind-obs').value = item && item.obs ? item.obs : '';
+  $('#ind-novo').checked = !!(item && item.novo);
+  $('#ind-inverso').checked = !!(item && item.inverso);
+  $('#ind-foco').checked = !!(item && item.foco);
+  $('#ind-modal').hidden = false;
+  $('#ind-nome').focus();
+}
+
+function fecharModalIndicador() { $('#ind-modal').hidden = true; }
+
+function salvarIndicador() {
+  const id = $('#ind-edit-id').value;
+  const nome = $('#ind-nome').value.trim();
+  const grupo = $('#ind-grupo').value;
+  if (!nome) { toast('Informe o nome do indicador.', 'bad'); return; }
+  if (!grupo) { toast('Selecione um agrupador.', 'bad'); return; }
+  const duplicado = state.indicadores.some(function (x) { return keyInd(x.ind) === keyInd(nome) && x.id !== id; });
+  if (duplicado) { toast('Já existe um indicador com esse nome.', 'bad'); return; }
+
+  const meta = $$('#ind-meta-niveis input[type="checkbox"]').map(function (cb) { return cb.checked ? 1 : 0; });
+  const dados = {
+    grupo: grupo, ind: nome, tipo: $('#ind-tipo').value, meta: meta,
+    novo: $('#ind-novo').checked ? 1 : 0,
+    inverso: $('#ind-inverso').checked ? 1 : 0,
+    obs: $('#ind-obs').value.trim(),
+    foco: $('#ind-foco').checked
+  };
+
+  if (id) {
+    const idx = state.indicadores.findIndex(function (x) { return x.id === id; });
+    if (idx >= 0) state.indicadores[idx] = Object.assign({}, state.indicadores[idx], dados);
+    toast('Indicador atualizado.');
+  } else {
+    state.indicadores.push(Object.assign({ id: uid() }, dados));
+    toast('Indicador criado.');
+  }
+  salvar();
+  rebuildCatIndex();
+  fecharModalIndicador();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
+}
+
+function excluirIndicador(id) {
+  const item = state.indicadores.find(function (x) { return x.id === id; });
+  if (!item) return;
+  if (!confirm('Excluir o indicador "' + item.ind + '"? Os dados já importados para ele deixam de aparecer no relatório.')) return;
+  state.indicadores = state.indicadores.filter(function (x) { return x.id !== id; });
+  salvar();
+  rebuildCatIndex();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
+  toast('Indicador excluído.');
+}
+
+function moverIndicador(id, dir) {
+  const idx = state.indicadores.findIndex(function (x) { return x.id === id; });
+  if (idx < 0) return;
+  const item = state.indicadores[idx];
+  let j = idx + dir;
+  while (j >= 0 && j < state.indicadores.length && state.indicadores[j].grupo !== item.grupo) j += dir;
+  if (j < 0 || j >= state.indicadores.length) return;
+  const tmp = state.indicadores[j];
+  state.indicadores[j] = item;
+  state.indicadores[idx] = tmp;
+  salvar();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
+}
+
+function moverIndicadorPara(idOrigem, idAlvo, grupoAlvo) {
+  const fromIdx = state.indicadores.findIndex(function (x) { return x.id === idOrigem; });
+  if (fromIdx < 0) return;
+  const item = state.indicadores[fromIdx];
+  state.indicadores.splice(fromIdx, 1);
+  item.grupo = grupoAlvo;
+  let toIdx = idAlvo ? state.indicadores.findIndex(function (x) { return x.id === idAlvo; }) : -1;
+  if (toIdx < 0) toIdx = state.indicadores.length;
+  state.indicadores.splice(toIdx, 0, item);
+  salvar();
+  rebuildCatIndex();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
+}
+
+function alternarFoco(id) {
+  const item = state.indicadores.find(function (x) { return x.id === id; });
+  if (!item) return;
+  item.foco = !item.foco;
+  salvar();
+  renderIndicadoresAdmin();
+  renderTudoVendas();
 }
 
 /* ==========================================================================
@@ -3084,22 +3531,22 @@ function lerValor(cell, ehPct) {
   return v;
 }
 
-const catIndex = (function () {
-  const map = new Map();
-  CATALOGO.forEach(function (c) { map.set(keyInd(c.ind), c); });
+let catIndex = new Map();
+function rebuildCatIndex() {
+  catIndex = new Map();
+  state.indicadores.forEach(function (c) { catIndex.set(keyInd(c.ind), c); });
   for (const k in ALIAS_INDICADOR) {
-    const c = CATALOGO.filter(function (x) { return x.ind === ALIAS_INDICADOR[k]; })[0];
-    if (c) map.set(keyInd(k), c);
+    const c = state.indicadores.filter(function (x) { return x.ind === ALIAS_INDICADOR[k]; })[0];
+    if (c) catIndex.set(keyInd(k), c);
   }
-  return map;
-})();
+}
 
 function acharIndicador(txt) { return catIndex.get(keyInd(txt)) || null; }
 
 function acharGrupo(txt) {
   const n = norm(txt);
   if (ALIAS_GRUPO[n]) return ALIAS_GRUPO[n];
-  const g = GRUPOS.filter(function (x) { return norm(x) === n; })[0];
+  const g = state.grupos.filter(function (x) { return norm(x) === n; })[0];
   return g || null;
 }
 
@@ -3325,7 +3772,7 @@ function gerarDemo() {
           nome: vend, supervisor: supervisor, gerente: gerente, territorio: territorios[ddd], ddd: ddd
         });
 
-        CATALOGO.forEach(function (c) {
+        state.indicadores.forEach(function (c) {
           let meta, real;
           if (c.tipo === '%') { meta = 90 + Math.round(rnd() * 10); real = 60 + Math.round(rnd() * 55); }
           else if (c.tipo === 'R$') { meta = 40000 + Math.round(rnd() * 60000); real = Math.round(meta * (0.6 + rnd() * 0.8)); }
@@ -3592,7 +4039,7 @@ function agregar() {
     }
   });
 
-  const linhas = CATALOGO.map(function (c) {
+  const linhas = state.indicadores.map(function (c) {
     const b = baldes.get(c.ind);
     const temMeta = !!c.meta[nivel];
     const tipo = c.tipo;
@@ -3799,86 +4246,100 @@ function renderGrupos(ag) {
     (porGrupo[l.cat.grupo] = porGrupo[l.cat.grupo] || []).push(l);
   });
 
-  alvo.innerHTML = GRUPOS.filter(function (g) { return porGrupo[g]; }).map(function (g) {
-    const linhas = porGrupo[g];
-    const av = linhas.filter(function (l) { return l.temMeta && l.mesPct != null; });
-    const acima = av.filter(function (l) { return l.mesPct >= 100; }).length;
-    const abaixo = av.length - acima;
-    const semMeta = linhas.filter(function (l) { return !l.temMeta; }).length;
+  const linhasFoco = ag.linhas.filter(function (l) { return l.cat.foco; });
 
-    const chips = [
-      acima   ? '<span class="chip chip-ok">▲ ' + acima + ' acima</span>' : '',
-      abaixo  ? '<span class="chip chip-bad">▼ ' + abaixo + ' abaixo</span>' : '',
-      semMeta ? '<span class="chip chip-none">' + semMeta + ' sem meta</span>' : ''
-    ].join('');
+  const blocoDestaque = linhasFoco.length
+    ? montarBlocoGrupo('★ Indicadores em foco', linhasFoco, ag, ' group-card-destaque')
+    : '';
 
-    const head =
-      '<div class="group-head">' +
-        '<span class="group-name">' + esc(g) + '</span>' +
-        '<span class="chip chip-onbrand">' + linhas.length + ' indicadores</span>' +
-        '<span class="group-head-spacer"></span>' +
-        '<span class="group-metrics">' + chips + '</span>' +
-      '</div>';
-
-    const colgroup =
-      '<colgroup>' +
-        '<col>' +
-        '<col class="c-tipo">' +
-        '<col class="c-num"><col class="c-num"><col class="c-num">' +
-        '<col class="c-sep">' +
-        '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
-        '<col class="c-sep">' +
-        '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
-        '<col class="c-sep">' +
-        '<col class="c-num">' +
-      '</colgroup>';
-
-    const thBand =
-      '<tr class="band">' +
-        '<th rowspan="2" class="col-ind" style="text-align:left">Indicador</th>' +
-        '<th rowspan="2" class="col-tipo">Tipo</th>' +
-        '<th colspan="3" class="band-real">[ Realizado ]</th>' +
-        '<th rowspan="2" class="sep-col"></th>' +
-        '<th colspan="4" class="band-month">[ Mês Atual ]</th>' +
-        '<th rowspan="2" class="sep-col"></th>' +
-        '<th colspan="4" class="band-week">[ Semana Atual ]</th>' +
-        '<th rowspan="2" class="sep-col"></th>' +
-        '<th colspan="1" class="band-day">[ Meta Dia ]</th>' +
-      '</tr>';
-
-    const thCols =
-      '<tr>' +
-        ag.meses.map(function (m) { return '<th class="num">' + m.rotulo + '</th>'; }).join('') +
-        '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Mês</th>' +
-        '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Sem.</th>' +
-        '<th class="num">%</th>' +
-      '</tr>';
-
-    const corpo = linhas.map(function (l) {
-      const c = l.cat;
-      return '<tr>' +
-        '<td class="col-ind"><div class="ind-cell"><span>' + esc(c.ind) + '</span></div></td>' +
-        '<td class="col-tipo">' + esc(c.tipo) + '</td>' +
-        l.hist.map(function (v) { return '<td class="num">' + fmtValor(v, c.tipo) + '</td>'; }).join('') +
-        '<td class="sep-col"></td>' +
-        '<td class="num">' + (l.temMeta ? fmtValor(l.mesMeta, c.tipo) : '<span class="void">—</span>') + '</td>' +
-        '<td class="num num-real">' + fmtValor(l.mesReal, c.tipo) + '</td>' +
-        celPct(l.mesPct, l.temMeta) +
-        '<td class="num">' + fmtValor(l.proj, c.tipo) + '</td>' +
-        '<td class="sep-col"></td>' +
-        '<td class="num">' + (l.temMeta ? fmtValor(l.semMeta, c.tipo) : '<span class="void">—</span>') + '</td>' +
-        '<td class="num num-real">' + fmtValor(l.semReal, c.tipo) + '</td>' +
-        celPct(l.semPct, l.temMeta) +
-        '<td class="num">' + fmtValor(l.projSem, c.tipo) + '</td>' +
-        '<td class="sep-col"></td>' +
-        celPct(l.diaPct, l.temMeta, l.metaDia == null ? null : 'Meta dia: ' + fmtValor(l.metaDia, c.tipo)) +
-      '</tr>';
-    }).join('');
-
-    return '<section class="group-card">' + head +
-           '<div class="tbl-wrap"><table class="tbl">' + colgroup + '<thead>' + thBand + thCols + '</thead>' +
-           '<tbody>' + corpo + '</tbody></table></div></section>';
+  const blocosGrupos = state.grupos.filter(function (g) { return porGrupo[g]; }).map(function (g) {
+    return montarBlocoGrupo(g, porGrupo[g], ag, '');
   }).join('');
+
+  alvo.innerHTML = blocoDestaque + blocosGrupos;
+}
+
+/* Monta um bloco (cartão + tabela) para um grupo de linhas — reaproveitado
+   tanto pelos agrupadores normais quanto pelo bloco extra de indicadores
+   em foco ("Destaques"), que usa exatamente o mesmo layout. */
+function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
+  const av = linhas.filter(function (l) { return l.temMeta && l.mesPct != null; });
+  const acima = av.filter(function (l) { return l.mesPct >= 100; }).length;
+  const abaixo = av.length - acima;
+  const semMeta = linhas.filter(function (l) { return !l.temMeta; }).length;
+
+  const chips = [
+    acima   ? '<span class="chip chip-ok">▲ ' + acima + ' acima</span>' : '',
+    abaixo  ? '<span class="chip chip-bad">▼ ' + abaixo + ' abaixo</span>' : '',
+    semMeta ? '<span class="chip chip-none">' + semMeta + ' sem meta</span>' : ''
+  ].join('');
+
+  const head =
+    '<div class="group-head">' +
+      '<span class="group-name">' + esc(nomeExibicao) + '</span>' +
+      '<span class="chip chip-onbrand">' + linhas.length + ' indicadores</span>' +
+      '<span class="group-head-spacer"></span>' +
+      '<span class="group-metrics">' + chips + '</span>' +
+    '</div>';
+
+  const colgroup =
+    '<colgroup>' +
+      '<col>' +
+      '<col class="c-tipo">' +
+      '<col class="c-num"><col class="c-num"><col class="c-num">' +
+      '<col class="c-sep">' +
+      '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
+      '<col class="c-sep">' +
+      '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
+      '<col class="c-sep">' +
+      '<col class="c-num">' +
+    '</colgroup>';
+
+  const thBand =
+    '<tr class="band">' +
+      '<th rowspan="2" class="col-ind" style="text-align:left">Indicador</th>' +
+      '<th rowspan="2" class="col-tipo">Tipo</th>' +
+      '<th colspan="3" class="band-real">[ Realizado ]</th>' +
+      '<th rowspan="2" class="sep-col"></th>' +
+      '<th colspan="4" class="band-month">[ Mês Atual ]</th>' +
+      '<th rowspan="2" class="sep-col"></th>' +
+      '<th colspan="4" class="band-week">[ Semana Atual ]</th>' +
+      '<th rowspan="2" class="sep-col"></th>' +
+      '<th colspan="1" class="band-day">[ Meta Dia ]</th>' +
+    '</tr>';
+
+  const thCols =
+    '<tr>' +
+      ag.meses.map(function (m) { return '<th class="num">' + m.rotulo + '</th>'; }).join('') +
+      '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Mês</th>' +
+      '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Sem.</th>' +
+      '<th class="num">%</th>' +
+    '</tr>';
+
+  const corpo = linhas.map(function (l) {
+    const c = l.cat;
+    return '<tr>' +
+      '<td class="col-ind"><div class="ind-cell">' + (c.foco ? '<span class="ind-foco-marca" title="Indicador foco">★</span>' : '') + '<span>' + esc(c.ind) + '</span></div></td>' +
+      '<td class="col-tipo">' + esc(c.tipo) + '</td>' +
+      l.hist.map(function (v) { return '<td class="num">' + fmtValor(v, c.tipo) + '</td>'; }).join('') +
+      '<td class="sep-col"></td>' +
+      '<td class="num">' + (l.temMeta ? fmtValor(l.mesMeta, c.tipo) : '<span class="void">—</span>') + '</td>' +
+      '<td class="num num-real">' + fmtValor(l.mesReal, c.tipo) + '</td>' +
+      celPct(l.mesPct, l.temMeta) +
+      '<td class="num">' + fmtValor(l.proj, c.tipo) + '</td>' +
+      '<td class="sep-col"></td>' +
+      '<td class="num">' + (l.temMeta ? fmtValor(l.semMeta, c.tipo) : '<span class="void">—</span>') + '</td>' +
+      '<td class="num num-real">' + fmtValor(l.semReal, c.tipo) + '</td>' +
+      celPct(l.semPct, l.temMeta) +
+      '<td class="num">' + fmtValor(l.projSem, c.tipo) + '</td>' +
+      '<td class="sep-col"></td>' +
+      celPct(l.diaPct, l.temMeta, l.metaDia == null ? null : 'Meta dia: ' + fmtValor(l.metaDia, c.tipo)) +
+    '</tr>';
+  }).join('');
+
+  return '<section class="group-card' + (classeExtra || '') + '">' + head +
+         '<div class="tbl-wrap"><table class="tbl">' + colgroup + '<thead>' + thBand + thCols + '</thead>' +
+         '<tbody>' + corpo + '</tbody></table></div></section>';
 }
 
 function renderTudoVendas() {
@@ -3893,6 +4354,7 @@ function renderTudoVendas() {
 function renderTudoAdmin() {
   renderCalendarioEFeriados();
   renderHierarquia();
+  renderIndicadoresAdmin();
   renderBases();
   renderAgendamentos();
 }
@@ -3917,6 +4379,8 @@ function renderRodape() {
 
 function init() {
   carregar();
+  garantirCatalogoPadrao();
+  rebuildCatIndex();
   definirRefPadrao(false);
   definirMesHiePadrao(false);
   resetFormAgendamento();
@@ -4003,6 +4467,45 @@ function init() {
     importarVendas(e.target.files); e.target.value = '';
   });
 
+  /* --- Indicadores --- */
+  $('#btn-novo-grupo').addEventListener('click', function () { abrirModalGrupo(null); });
+  $('#grp-cancelar').addEventListener('click', fecharModalGrupo);
+  $('#grp-salvar').addEventListener('click', salvarGrupo);
+  $('#grp-modal').addEventListener('click', function (e) { if (e.target.id === 'grp-modal') fecharModalGrupo(); });
+
+  $('#ind-cancelar').addEventListener('click', fecharModalIndicador);
+  $('#ind-salvar').addEventListener('click', salvarIndicador);
+  $('#ind-modal').addEventListener('click', function (e) { if (e.target.id === 'ind-modal') fecharModalIndicador(); });
+
+  let indDragState = null;
+  $('#ind-grupos-wrap').addEventListener('dragstart', function (e) {
+    const grpHead = e.target.closest('.ind-group-head');
+    const indRow = e.target.closest('.ind-row');
+    if (grpHead) { indDragState = { tipo: 'grupo', valor: grpHead.dataset.grupo }; e.dataTransfer.effectAllowed = 'move'; return; }
+    if (indRow) { indDragState = { tipo: 'indicador', valor: indRow.dataset.id }; e.dataTransfer.effectAllowed = 'move'; }
+  });
+  $('#ind-grupos-wrap').addEventListener('dragover', function (e) {
+    if (!indDragState) return;
+    const grpHead = e.target.closest('.ind-group-head');
+    const indRow = e.target.closest('.ind-row');
+    const list = e.target.closest('.ind-list');
+    if (indDragState.tipo === 'grupo' && grpHead) e.preventDefault();
+    if (indDragState.tipo === 'indicador' && (indRow || list)) e.preventDefault();
+  });
+  $('#ind-grupos-wrap').addEventListener('drop', function (e) {
+    if (!indDragState) return;
+    if (indDragState.tipo === 'grupo') {
+      const grpHead = e.target.closest('.ind-group-head');
+      if (grpHead) { e.preventDefault(); moverGrupoPara(indDragState.valor, grpHead.dataset.grupo); }
+    } else {
+      const indRow = e.target.closest('.ind-row');
+      const list = e.target.closest('.ind-list');
+      if (indRow) { e.preventDefault(); moverIndicadorPara(indDragState.valor, indRow.dataset.id, indRow.closest('.ind-list').dataset.grupo); }
+      else if (list) { e.preventDefault(); moverIndicadorPara(indDragState.valor, null, list.dataset.grupo); }
+    }
+    indDragState = null;
+  });
+
   /* --- Cliques delegados --- */
   document.addEventListener('click', function (e) {
     const delF = e.target.closest('[data-del-feriado]');
@@ -4029,8 +4532,20 @@ function init() {
     if (hieFiltroAberto && !e.target.closest('.hie-filtro-drop') && !e.target.closest('[data-hie-filtro-btn]')) fecharDropdownHie();
     const act = e.target.closest('[data-act]');
     if (act) {
-      if (act.getAttribute('data-act') === 'importar-vendas') $('#input-vendas').click();
-      if (act.getAttribute('data-act') === 'demo') gerarDemo();
+      const a = act.getAttribute('data-act');
+      if (a === 'importar-vendas') $('#input-vendas').click();
+      if (a === 'demo') gerarDemo();
+      if (a === 'add-grupo') abrirModalGrupo(null);
+      if (a === 'editar-grupo') abrirModalGrupo(act.getAttribute('data-grupo'));
+      if (a === 'excluir-grupo') excluirGrupo(act.getAttribute('data-grupo'));
+      if (a === 'mover-grupo-up') moverGrupo(act.getAttribute('data-grupo'), -1);
+      if (a === 'mover-grupo-down') moverGrupo(act.getAttribute('data-grupo'), 1);
+      if (a === 'add-indicador') abrirModalIndicador(act.getAttribute('data-grupo'), null);
+      if (a === 'editar-ind') abrirModalIndicador(null, act.getAttribute('data-id'));
+      if (a === 'excluir-ind') excluirIndicador(act.getAttribute('data-id'));
+      if (a === 'mover-ind-up') moverIndicador(act.getAttribute('data-id'), -1);
+      if (a === 'mover-ind-down') moverIndicador(act.getAttribute('data-id'), 1);
+      if (a === 'toggle-foco') alternarFoco(act.getAttribute('data-id'));
     }
   });
   document.addEventListener('change', function (e) {
@@ -4095,6 +4610,8 @@ function iniciarBoasVindas() {
     if (!el.hidden) { fecharBoasVindas(); return; }
     if (!$('#hie-modal-lote').hidden) { fecharEdicaoLoteHie(); return; }
     if (!$('#hie-modal').hidden) { fecharEdicaoHie(); return; }
+    if (!$('#ind-modal').hidden) { fecharModalIndicador(); return; }
+    if (!$('#grp-modal').hidden) { fecharModalGrupo(); return; }
     if (hieFiltroAberto) fecharDropdownHie();
   });
 }
