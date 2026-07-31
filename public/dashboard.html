@@ -860,17 +860,40 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
 }
 .cal-cell.is-void { background: transparent; border-color: transparent; }
 .cal-cell .d-num { font-size: var(--fs-md); font-weight: 700; color: var(--text); }
+.cal-cell.is-weekend { background: var(--line-soft); }
 .cal-cell.is-weekend .d-num { color: var(--text-faint); }
 .cal-cell.is-today { border-color: var(--rf-bordo); box-shadow: 0 0 0 1px var(--rf-bordo) inset; }
 .cal-cell.is-feriado { background: var(--bad-bg); border-color: #FCA5A5; }
 .cal-cell.is-feriado .d-num { color: var(--bad-strong); }
-.cal-cell.is-nao-feriado { background: var(--ok-bg); border-color: #A7F3C4; }
+.cal-cell.is-util { background: var(--ok-bg); border-color: #A7F3C4; }
 .cal-cell .d-tag {
   position: absolute; bottom: 5px; left: 6px; right: 6px;
   font-size: 8.5px; font-weight: 700; line-height: 1.3; color: var(--bad-strong);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.cal-cell.is-nao-feriado .d-tag { color: var(--ok-strong); }
+.cal-cell.is-util .d-tag { color: var(--ok-strong); }
+
+/* --- Calendário: linhas coloridas na tabela "Dias do mês" ---------------- */
+#tbl-dias tbody tr.row-util    { background: var(--ok-bg); }
+#tbl-dias tbody tr.row-weekend { background: var(--line-soft); }
+#tbl-dias tbody tr.row-feriado { background: var(--bad-bg); }
+
+/* --- Blocos colapsáveis (Calendário) ------------------------------------- */
+.collapsible { margin-top: var(--sp-5); overflow: hidden; }
+.collapsible > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-5); font-size: var(--fs-lg); font-weight: 700; color: var(--text);
+}
+.collapsible > summary::-webkit-details-marker { display: none; }
+.collapsible > summary::marker { content: ''; }
+.collapsible > summary:hover { color: var(--rf-bordo); }
+.collapsible > summary .chev { margin-left: auto; color: var(--text-muted); font-size: var(--fs-sm); transition: transform .15s; }
+.collapsible[open] > summary .chev { transform: rotate(180deg); }
+.collapsible[open] > summary { border-bottom: 1px solid var(--line); }
+.collapsible-body { padding: 20px; }
+.collapsible-body.flush { padding: 0; }
+.collapsible:not([open]) > .collapsible-body { display: none; }
 
 /* --- Linha do tempo de execuções (Agendamento) --------------------------- */
 .exec-list { display: flex; flex-direction: column; gap: 6px; margin-top: var(--sp-2); }
@@ -1354,29 +1377,47 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
         </div>
         <span style="flex:1"></span>
         <div class="legend" style="border:none;box-shadow:none;padding:0;margin:0;">
+          <span class="legend-item"><span class="swatch" style="background:var(--ok-bg);border:1px solid var(--ok-strong)"></span>Dia útil</span>
+          <span class="legend-item"><span class="swatch" style="background:var(--line-soft);border:1px solid var(--line)"></span>Final de semana</span>
           <span class="legend-item"><span class="swatch" style="background:var(--bad-bg);border:1px solid var(--bad-strong)"></span>Feriado</span>
-          <span class="legend-item"><span class="swatch" style="background:var(--ok-bg);border:1px solid var(--ok-strong)"></span>Exceção (não feriado)</span>
         </div>
       </div>
 
-      <div class="card" style="padding:20px;">
-        <div class="cal-grid" id="cal-dow-row"></div>
-        <div class="cal-grid" id="cal-grid" style="margin-top:6px;"></div>
-      </div>
-
-      <div class="section-head" style="margin-top:28px;">
-        <h1 style="font-size:var(--fs-lg)">Dias do mês</h1>
-      </div>
-      <div class="card" style="padding:0;">
-        <div class="gtbl-wrap">
-          <table class="gtbl" id="tbl-dias">
-            <thead>
-              <tr><th>Data</th><th>Dia</th><th>Mês</th><th>Ano</th><th>Dia da semana</th><th>Semana do mês</th><th>Feriado</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <details class="card collapsible" open>
+        <summary>Calendário<span class="chev">▾</span></summary>
+        <div class="collapsible-body">
+          <div class="cal-grid" id="cal-dow-row"></div>
+          <div class="cal-grid" id="cal-grid" style="margin-top:6px;"></div>
         </div>
-      </div>
+      </details>
+
+      <details class="card collapsible" open>
+        <summary>Resumo do mês<span class="chev">▾</span></summary>
+        <div class="collapsible-body flush">
+          <div class="gtbl-wrap">
+            <table class="gtbl" id="tbl-resumo-mes">
+              <thead>
+                <tr><th>DDD</th><th>Mês</th><th>Ano</th><th>Total dias mês</th><th>Feriados</th><th>Finais de semana</th><th>Dias úteis</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="card collapsible" open>
+        <summary>Dias do mês<span class="chev">▾</span></summary>
+        <div class="collapsible-body flush">
+          <div class="gtbl-wrap">
+            <table class="gtbl" id="tbl-dias">
+              <thead>
+                <tr><th>Data</th><th>Dia</th><th>Mês</th><th>Ano</th><th>Dia da semana</th><th>Semana do mês</th><th>Feriado</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
     </section>
 
     <!-- Cadastro 2: Feriados por DDD -->
@@ -1412,7 +1453,8 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
         </div>
         <div class="hint">
           <strong>Feriado</strong> acrescenta um feriado só daquele DDD (ex.: aniversário da cidade).
-          <strong>Dia normal</strong> cancela, só para aquele DDD, um feriado nacional que caia na data informada.
+          <strong>Dia normal</strong> transforma a data em dia útil só para aquele DDD — tanto cancela um feriado
+          nacional quanto faz um sábado ou domingo virar dia útil.
         </div>
       </div>
 
@@ -1979,17 +2021,25 @@ function statusFeriado(d, ddd) {
     const doDdd = state.feriados.filter(function (f) { return f.data === iso && normNome(f.ddd) === dn; });
     const add = doDdd.find(function (f) { return f.tipo === 'feriado'; });
     const rem = doDdd.find(function (f) { return f.tipo === 'nao_feriado'; });
-    if (add) return { feriado: true, motivo: add.descricao || 'Feriado municipal', origem: 'ddd' };
-    if (rem && nomeNacional) return { feriado: false, motivo: rem.descricao || 'Exceção cadastrada', origem: 'ddd' };
+    /* "Dia normal" cadastrado força dia útil independente do motivo: tanto
+       cancela um feriado nacional quanto transforma um sábado/domingo em
+       dia útil para aquele DDD. */
+    if (add) return { feriado: true, motivo: add.descricao || 'Feriado municipal', origem: 'ddd', diaNormalForcado: false };
+    if (rem) return { feriado: false, motivo: rem.descricao || 'Dia normal (exceção)', origem: 'ddd', diaNormalForcado: true };
   }
-  if (nomeNacional) return { feriado: true, motivo: nomeNacional, origem: 'nacional' };
-  return { feriado: false };
+  if (nomeNacional) return { feriado: true, motivo: nomeNacional, origem: 'nacional', diaNormalForcado: false };
+  return { feriado: false, diaNormalForcado: false };
 }
 
+/* Padrão: segunda a sexta = dia útil, sábado/domingo = final de semana,
+   feriado cadastrado sempre remove o dia útil. Uma exceção "Dia normal"
+   cadastrada para o DDD naquela data vira dia útil mesmo em fim de semana. */
 function ehDiaUtil(d, ddd) {
+  const status = statusFeriado(d, ddd);
+  if (status.feriado) return false;
+  if (status.diaNormalForcado) return true;
   const dow = d.getDay();
-  if (dow === 0 || dow === 6) return false;
-  return !statusFeriado(d, ddd).feriado;
+  return dow !== 0 && dow !== 6;
 }
 
 function diasUteis(ini, fim, ddd) {
@@ -2001,6 +2051,24 @@ function diasUteis(ini, fim, ddd) {
     d.setDate(d.getDate() + 1);
   }
   return n;
+}
+
+/* Resumo do mês (Diretoria/DDD): cada dia entra em exatamente um balde —
+   feriado > final de semana > dia útil — para bater com o que o calendário
+   pinta. Dias úteis = total - feriados - finais de semana. */
+function resumoMes(ano, mes, ddd) {
+  const totalDias = new Date(ano, mes, 0).getDate();
+  let feriados = 0, finaisDeSemana = 0;
+  for (let dia = 1; dia <= totalDias; dia++) {
+    const d = new Date(ano, mes - 1, dia);
+    const status = statusFeriado(d, ddd);
+    if (status.feriado) { feriados++; continue; }
+    if (status.diaNormalForcado) continue;
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) finaisDeSemana++;
+  }
+  return { totalDias: totalDias, feriados: feriados, finaisDeSemana: finaisDeSemana,
+           diasUteis: totalDias - feriados - finaisDeSemana };
 }
 
 /* Semana do mês (grade Dom→Sáb) — usada na tabela "Dias do mês" do Calendário. */
@@ -2275,9 +2343,10 @@ function renderMiniCalendario() {
     const dow = d.getDay();
     const st = statusFeriado(d, ddd);
     const cls = ['cal-cell'];
-    if (dow === 0 || dow === 6) cls.push('is-weekend');
     if (isoDate(d) === isoHoje) cls.push('is-today');
-    if (st.feriado) cls.push('is-feriado'); else if (st.origem === 'ddd') cls.push('is-nao-feriado');
+    if (st.feriado) cls.push('is-feriado');
+    else if (st.diaNormalForcado || (dow !== 0 && dow !== 6)) cls.push('is-util');
+    else cls.push('is-weekend');
     html += '<div class="' + cls.join(' ') + '">' +
       '<div class="d-num">' + dia + '</div>' +
       (st.motivo ? '<div class="d-tag" title="' + esc(st.motivo) + '">' + esc(st.motivo) + '</div>' : '') +
@@ -2292,11 +2361,14 @@ function renderTabelaDias() {
   let linhas = '';
   for (let dia = 1; dia <= totalDias; dia++) {
     const d = new Date(ano, mes - 1, dia);
+    const dow = d.getDay();
     const st = statusFeriado(d, ddd);
+    const util = st.diaNormalForcado || (!st.feriado && dow !== 0 && dow !== 6);
+    const linhaCls = st.feriado ? 'row-feriado' : (util ? 'row-util' : 'row-weekend');
     const feriadoTxt = st.feriado
       ? '<span class="badge-tipo is-feriado">' + esc(st.motivo || 'Feriado') + '</span>'
       : (st.origem === 'ddd' ? '<span class="badge-tipo is-normal">' + esc(st.motivo || 'Exceção') + '</span>' : '—');
-    linhas += '<tr>' +
+    linhas += '<tr class="' + linhaCls + '">' +
       '<td class="tmuted">' + String(dia).padStart(2, '0') + '/' + String(mes).padStart(2, '0') + '/' + ano + '</td>' +
       '<td class="tnum">' + dia + '</td>' +
       '<td>' + MES_NOME[mes - 1] + '</td>' +
@@ -2307,6 +2379,20 @@ function renderTabelaDias() {
     '</tr>';
   }
   $('#tbl-dias tbody').innerHTML = linhas;
+}
+
+function renderResumoMes() {
+  const ano = state.cal.ano, mes = state.cal.mes, ddd = state.cal.ddd.trim();
+  const r = resumoMes(ano, mes, ddd);
+  $('#tbl-resumo-mes tbody').innerHTML = '<tr>' +
+    '<td>' + esc(ddd || 'Nacional') + '</td>' +
+    '<td>' + MES_NOME[mes - 1] + '</td>' +
+    '<td class="tnum">' + ano + '</td>' +
+    '<td class="tnum">' + r.totalDias + '</td>' +
+    '<td class="tnum">' + r.feriados + '</td>' +
+    '<td class="tnum">' + r.finaisDeSemana + '</td>' +
+    '<td class="tnum"><strong>' + r.diasUteis + '</strong></td>' +
+  '</tr>';
 }
 
 function renderTabelaFeriados() {
@@ -2338,6 +2424,7 @@ function renderListaDdd() {
 function renderCalendarioTab() {
   renderSeletorCalendario();
   renderMiniCalendario();
+  renderResumoMes();
   renderTabelaDias();
 }
 
@@ -4646,9 +4733,9 @@ function init() {
   window.addEventListener('hashchange', function () { irParaHash(location.hash.slice(1)); });
 
   /* --- Calendário --- */
-  $('#cal-ddd').addEventListener('input', function (e) { state.cal.ddd = e.target.value; renderMiniCalendario(); renderTabelaDias(); });
-  $('#cal-mes').addEventListener('change', function (e) { state.cal.mes = +e.target.value; renderMiniCalendario(); renderTabelaDias(); });
-  $('#cal-ano').addEventListener('change', function (e) { state.cal.ano = +e.target.value; renderMiniCalendario(); renderTabelaDias(); });
+  $('#cal-ddd').addEventListener('input', function (e) { state.cal.ddd = e.target.value; renderMiniCalendario(); renderResumoMes(); renderTabelaDias(); });
+  $('#cal-mes').addEventListener('change', function (e) { state.cal.mes = +e.target.value; renderMiniCalendario(); renderResumoMes(); renderTabelaDias(); });
+  $('#cal-ano').addEventListener('change', function (e) { state.cal.ano = +e.target.value; renderMiniCalendario(); renderResumoMes(); renderTabelaDias(); });
 
   $$('#frm-tipo button').forEach(function (b) {
     b.addEventListener('click', function () {
