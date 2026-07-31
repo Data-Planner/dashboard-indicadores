@@ -1674,11 +1674,14 @@ const NIVEIS = [
  */
 const CATALOGO_PADRAO = [
   /* --- CHIP ------------------------------------------------------------- */
-  { grupo: 'CHIP', ind: 'Abastecimento',                  tipo: '%',    meta: [1,1,1,1] },
-  { grupo: 'CHIP', ind: '% Consultores >= 100%',          tipo: '%',    meta: [0,0,0,0], novo: 1, obs: 'Será estipulada uma meta?' },
-  { grupo: 'CHIP', ind: 'Cap. Claro (3Chips)',            tipo: '%',    meta: [1,1,1,1] },
-  { grupo: 'CHIP', ind: 'Cap. TIM (3Chips)',              tipo: '%',    meta: [1,1,1,1] },
-  { grupo: 'CHIP', ind: 'Cap. Vivo (3Chips)',             tipo: '%',    meta: [1,1,1,1] },
+  { grupo: 'CHIP', ind: 'Abastecimento',                  tipo: 'Qtde', meta: [1,1,1,1] },
+  { grupo: 'CHIP', ind: 'Abastecimento - TIM',            tipo: 'Qtde', meta: [1,1,1,1] },
+  { grupo: 'CHIP', ind: 'Abastecimento - VIVO',           tipo: 'Qtde', meta: [1,1,1,1] },
+  { grupo: 'CHIP', ind: 'Abastecimento - CLARO',          tipo: 'Qtde', meta: [1,1,1,1] },
+  { grupo: 'CHIP', ind: '% Consultores >= 100%',          tipo: '%',    meta: [1,1,1,1] },
+  { grupo: 'CHIP', ind: 'Cap. Claro (3Chips)',            tipo: 'Qtde', meta: [1,1,1,1] },
+  { grupo: 'CHIP', ind: 'Cap. TIM (3Chips)',              tipo: 'Qtde', meta: [1,1,1,1] },
+  { grupo: 'CHIP', ind: 'Cap. Vivo (3Chips)',             tipo: 'Qtde', meta: [1,1,1,1] },
   { grupo: 'CHIP', ind: '% Visitas',                      tipo: '%',    meta: [0,0,0,0] },
   { grupo: 'CHIP', ind: 'Cad. Físico',                    tipo: 'Qtde', meta: [0,0,0,0], obs: 'Não existe meta.' },
 
@@ -1720,6 +1723,29 @@ function garantirCatalogoPadrao() {
   }
 }
 
+/* Migração pontual: navegadores que já tinham o catálogo salvo antes da
+   importação por planilha "Chip" (Meta/Real vindos por coluna, somados por
+   operadora) precisam do tipo 'Qtde' nesses indicadores (senão o painel
+   faz média em vez de soma) e dos 3 indicadores novos por operadora. */
+function garantirIndicadoresChip() {
+  const corrigirTipo = {
+    'Abastecimento': 'Qtde', 'Cap. Claro (3Chips)': 'Qtde',
+    'Cap. TIM (3Chips)': 'Qtde', 'Cap. Vivo (3Chips)': 'Qtde'
+  };
+  state.indicadores.forEach(function (c) {
+    if (c.grupo === 'CHIP' && corrigirTipo[c.ind]) c.tipo = corrigirTipo[c.ind];
+    if (c.grupo === 'CHIP' && c.ind === '% Consultores >= 100%') c.meta = [1, 1, 1, 1];
+  });
+  const novos = ['Abastecimento - TIM', 'Abastecimento - VIVO', 'Abastecimento - CLARO'];
+  const posAbast = state.indicadores.findIndex(function (c) { return c.ind === 'Abastecimento'; });
+  novos.forEach(function (ind, i) {
+    if (state.indicadores.some(function (c) { return c.ind === ind; })) return;
+    const novo = { id: uid(), grupo: 'CHIP', ind: ind, tipo: 'Qtde', meta: [1, 1, 1, 1], foco: false };
+    const at = posAbast >= 0 ? posAbast + 1 + i : state.indicadores.length;
+    state.indicadores.splice(at, 0, novo);
+  });
+}
+
 /* Grafias alternativas aceitas na importação (chave normalizada -> indicador do catálogo). */
 const ALIAS_INDICADOR = {
   'base transacionando':          'Base Transancionando',
@@ -1749,6 +1775,9 @@ const ALIAS_INDICADOR = {
   'tpv':                          'TPV',
   'base 5k':                      'Base 5K',
   'abastecimento':                'Abastecimento',
+  'abastecimento tim':             'Abastecimento - TIM',
+  'abastecimento vivo':            'Abastecimento - VIVO',
+  'abastecimento claro':           'Abastecimento - CLARO',
   'visitas':                      '% Visitas',
   'percentual de visitas':        '% Visitas',
   'visitas realizadas':           '% Visitas'
@@ -2733,7 +2762,11 @@ function processarPlanilhaHie(ws, fid, refPeriodo) {
     });
     if (score > hdrScore) { hdrScore = score; hdrRow = R; hdrMap = map; }
   }
-  if (hdrRow < 0 || !hdrMap || hdrMap.nome === undefined) return { linhas: 0 };
+  /* Exige uma coluna "DDD" de verdade (não só nome/gerente/supervisor) —
+     senão abas de indicadores que também trazem essas colunas de contexto
+     (ex.: "Chip", "Corban", "FlexCred", "ADQ" da mesma planilha-base)
+     seriam reconhecidas por engano como hierarquia. */
+  if (hdrRow < 0 || !hdrMap || hdrMap.nome === undefined || hdrMap.ddd === undefined) return { linhas: 0 };
 
   const padrao = refPeriodo || { ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 };
   let linhas = 0, vazias = 0;
@@ -2755,6 +2788,77 @@ function processarPlanilhaHie(ws, fid, refPeriodo) {
     state.hierarquia.push({
       id: uid(), fid: fid, mesAno: mesAno, idConsultor: val('id'), nome: val('nome'),
       supervisor: val('supervisor'), gerente: val('gerente'), territorio: val('territorio'), ddd: val('ddd')
+    });
+    linhas++;
+  }
+  return { linhas: linhas };
+}
+
+/* Planilha "Equipe" (roster de vendedores da base "Base Painel Indicadores")
+   — colunas Diretoria / DDDGestao / Gerente / Supervisor / Vendedor / Chave /
+   Situacao. Não tem coluna de mês: usa a competência do nome do arquivo (ou
+   o mês corrente). Só entram vendedores com Situacao = ATIVO.
+   Mapeamento dos filtros do painel (Diretoria/Gerente/Supervisor/Vendedor):
+     Diretoria -> filtro Diretoria · Gerente -> filtro Gerente ·
+     Supervisor -> filtro Supervisor · Vendedor -> filtro Vendedor.
+   DDDGestao entra só como contexto extra (coluna "Território" da hierarquia). */
+const ALIASES_EQUIPE = {
+  diretoria: ['diretoria'],
+  dddGestao: ['dddgestao', 'ddd gestao'],
+  gerente:   ['gerente'],
+  supervisor: ['supervisor'],
+  vendedor:  ['vendedor'],
+  chave:     ['chave'],
+  situacao:  ['situacao']
+};
+
+function classificarCabecalhoEquipe(txt) {
+  const n = norm(txt);
+  if (!n) return null;
+  for (const campo in ALIASES_EQUIPE) {
+    if (ALIASES_EQUIPE[campo].indexOf(n) >= 0) return campo;
+  }
+  return null;
+}
+
+function processarPlanilhaEquipe(ws, fid, refPeriodo) {
+  const m = matrizSimples(ws);
+  if (!m.length) return { linhas: 0 };
+
+  let hdrRow = -1, hdrScore = 0, hdrMap = null;
+  const limite = Math.min(m.length, 20);
+  for (let R = 0; R < limite; R++) {
+    const map = {}; let score = 0;
+    m[R].forEach(function (v, C) {
+      const campo = classificarCabecalhoEquipe(v);
+      if (campo && map[campo] === undefined) { map[campo] = C; score += 1; }
+    });
+    if (score > hdrScore) { hdrScore = score; hdrRow = R; hdrMap = map; }
+  }
+  if (hdrRow < 0 || !hdrMap || hdrMap.vendedor === undefined || hdrMap.diretoria === undefined) return { linhas: 0 };
+
+  const padrao = refPeriodo || { ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 };
+  const mesAno = padrao.ano + '-' + String(padrao.mes).padStart(2, '0');
+
+  let linhas = 0, vazias = 0;
+  for (let R = hdrRow + 1; R < m.length; R++) {
+    const row = m[R];
+    const nome = row[hdrMap.vendedor];
+    if (nome == null || String(nome).trim() === '') {
+      if (++vazias > 25) break;
+      continue;
+    }
+    vazias = 0;
+    const val = function (campo) {
+      if (hdrMap[campo] === undefined) return '';
+      const v = row[hdrMap[campo]];
+      return v == null ? '' : String(v).trim();
+    };
+    const situacao = norm(val('situacao'));
+    if (situacao && situacao !== 'ativo') continue;
+    state.hierarquia.push({
+      id: uid(), fid: fid, mesAno: mesAno, idConsultor: val('chave'), nome: val('vendedor'),
+      supervisor: val('supervisor'), gerente: val('gerente'), territorio: val('dddGestao'), ddd: val('diretoria')
     });
     linhas++;
   }
@@ -2783,6 +2887,11 @@ async function importarHierarquia(fileList) {
       const wb = XLSX.read(buf, { cellDates: true });
       const refPeriodo = periodoDoNomeArquivo(f.name);
       wb.SheetNames.forEach(function (nome) {
+        if (norm(nome) === 'equipe') {
+          const re = processarPlanilhaEquipe(wb.Sheets[nome], fid, refPeriodo);
+          linhasArquivo += re.linhas;
+          return;
+        }
         const r = processarPlanilhaHie(wb.Sheets[nome], fid, refPeriodo);
         linhasArquivo += r.linhas;
       });
@@ -3550,6 +3659,106 @@ function acharGrupo(txt) {
   return g || null;
 }
 
+/* Planilha "Chip" (base larga por operadora) — uma linha por vendedor x
+   operadora, com colunas Chip_Meta_Abastecimento / Chip_Real_Abastecimento /
+   Chip_Meta_Cap3 / Chip_Real_Cap3. Cada linha vira:
+     - um registro em "Abastecimento"                (soma as 3 operadoras)
+     - um registro em "Abastecimento - <Operadora>"   (só aquela operadora)
+     - um registro em "Cap. <Operadora> (3Chips)"     (só aquela operadora)
+   A soma por DDD/Diretoria já é feita pelo agregador padrão (tipo 'Qtde'). */
+const ALIASES_CHIP = {
+  diretoria: ['dddgestao', 'ddd gestao', 'diretoria'],
+  gerente:   ['gerente'],
+  supervisor: ['supervisor'],
+  vendedor:  ['vendedor'],
+  operadora: ['operadora'],
+  metaAbast: ['chip meta abastecimento'],
+  realAbast: ['chip real abastecimento'],
+  metaCap3:  ['chip meta cap3'],
+  realCap3:  ['chip real cap3']
+};
+
+function classificarCabecalhoChip(txt) {
+  const n = norm(txt);
+  if (!n) return null;
+  for (const campo in ALIASES_CHIP) {
+    if (ALIASES_CHIP[campo].indexOf(n) >= 0) return campo;
+  }
+  return null;
+}
+
+const CHIP_ABAST_POR_OPERADORA = { claro: 'Abastecimento - CLARO', tim: 'Abastecimento - TIM', vivo: 'Abastecimento - VIVO' };
+const CHIP_CAP3_POR_OPERADORA  = { claro: 'Cap. Claro (3Chips)',   tim: 'Cap. TIM (3Chips)',   vivo: 'Cap. Vivo (3Chips)' };
+
+function processarPlanilhaChip(nomeAba, ws, fid, refNome) {
+  const res = { records: [], warnings: [], naoReconhecidos: new Set(), linhas: 0 };
+  const m = matrizDaPlanilha(ws);
+  if (!m.length) return res;
+
+  let hdrRow = -1, hdrScore = 0, hdrMap = null;
+  const limite = Math.min(m.length, 25);
+  for (let R = 0; R < limite; R++) {
+    const map = {};
+    let score = 0;
+    m[R].forEach(function (cell, C) {
+      if (!cell || cell.v == null) return;
+      const campo = classificarCabecalhoChip(cell.v);
+      if (campo && map[campo] === undefined) { map[campo] = C; score += 2; }
+    });
+    if (score > hdrScore) { hdrScore = score; hdrRow = R; hdrMap = map; }
+  }
+  const temColunaDado = hdrMap && (hdrMap.metaAbast !== undefined || hdrMap.realAbast !== undefined ||
+                                    hdrMap.metaCap3 !== undefined || hdrMap.realCap3 !== undefined);
+  if (hdrRow < 0 || !hdrMap || hdrMap.operadora === undefined || !temColunaDado) return res;
+
+  const padrao = refNome || { ano: new Date().getFullYear(), mes: new Date().getMonth() + 1 };
+  const operadorasDesconhecidas = new Set();
+
+  let vazias = 0;
+  for (let R = hdrRow + 1; R < m.length; R++) {
+    const row = m[R];
+    const cOp = row[hdrMap.operadora];
+    const opTxt = cOp && cOp.v != null ? String(cOp.v).trim() : '';
+    if (!opTxt) { if (++vazias > 25) break; continue; }
+    vazias = 0;
+
+    const opKey = norm(opTxt);
+    const tx = function (campo) {
+      if (hdrMap[campo] === undefined) return '';
+      const c = row[hdrMap[campo]];
+      return c && c.v != null ? String(c.v).trim() : '';
+    };
+    const base = { dArquivo: tx('diretoria'), gArquivo: tx('gerente'), sArquivo: tx('supervisor'), v: tx('vendedor'), grp: 'CHIP', fid: fid };
+
+    const metaAbast = hdrMap.metaAbast !== undefined ? lerValor(row[hdrMap.metaAbast], false) : null;
+    const realAbast = hdrMap.realAbast !== undefined ? lerValor(row[hdrMap.realAbast], false) : null;
+    const metaCap3  = hdrMap.metaCap3  !== undefined ? lerValor(row[hdrMap.metaCap3], false)  : null;
+    const realCap3  = hdrMap.realCap3  !== undefined ? lerValor(row[hdrMap.realCap3], false)  : null;
+
+    const push = function (ind, meta, real) {
+      if (meta == null && real == null) return;
+      res.records.push(Object.assign({}, base, { ind: ind, ano: padrao.ano, mes: padrao.mes, sem: null, meta: meta, real: real, base: null }));
+      res.linhas++;
+    };
+
+    if (metaAbast != null || realAbast != null) {
+      push('Abastecimento', metaAbast, realAbast);
+      const indAbastOp = CHIP_ABAST_POR_OPERADORA[opKey];
+      if (indAbastOp) push(indAbastOp, metaAbast, realAbast); else operadorasDesconhecidas.add(opTxt);
+    }
+    if (metaCap3 != null || realCap3 != null) {
+      const indCapOp = CHIP_CAP3_POR_OPERADORA[opKey];
+      if (indCapOp) push(indCapOp, metaCap3, realCap3); else operadorasDesconhecidas.add(opTxt);
+    }
+  }
+
+  if (operadorasDesconhecidas.size) {
+    res.warnings.push('Aba "' + nomeAba + '": operadora(s) não reconhecida(s) (esperado TIM/VIVO/CLARO): ' +
+      Array.from(operadorasDesconhecidas).slice(0, 6).join(', ') + (operadorasDesconhecidas.size > 6 ? ' …' : ''));
+  }
+  return res;
+}
+
 function processarPlanilhaVendas(nomeAba, ws, fid, refNome) {
   const res = { records: [], warnings: [], naoReconhecidos: new Set(), linhas: 0 };
   const m = matrizDaPlanilha(ws);
@@ -3694,6 +3903,12 @@ async function importarVendas(fileList) {
         recs.push.apply(recs, r.records);
         warnings.push.apply(warnings, r.warnings);
         r.naoReconhecidos.forEach(function (x) { naoRec.add(x); });
+
+        if (norm(nome) === 'chip') {
+          const rc = processarPlanilhaChip(nome, wb.Sheets[nome], fid, refNome);
+          recs.push.apply(recs, rc.records);
+          warnings.push.apply(warnings, rc.warnings);
+        }
       });
 
       if (!recs.length) {
@@ -4113,6 +4328,42 @@ function agregar() {
              semMeta: semMeta, semReal: semReal, semPct: semPct, projSem: projSem, metaDia: metaDia, diaPct: diaPct };
   });
 
+  /* "% Consultores >= 100%" não vem de planilha — é calculado a partir dos
+     registros de "Abastecimento" (já somando as 3 operadoras por consultor):
+     conta quantos consultores, dentre os que têm meta e respeitam o filtro
+     da tela (recs já é registrosFiltrados()), atingiram >= 100% do próprio
+     abastecimento no período. */
+  function pctConsultoresAcimaDe100(ano, mes) {
+    const porVendedor = new Map();
+    recs.forEach(function (r) {
+      if (r.ind !== 'Abastecimento' || r.ano !== ano || r.mes !== mes) return;
+      const nome = efetivo(r).nome || r.v || '';
+      if (!nome) return;
+      let acc = porVendedor.get(nome);
+      if (!acc) { acc = { meta: 0, real: 0 }; porVendedor.set(nome, acc); }
+      if (r.meta != null) acc.meta += r.meta;
+      if (r.real != null) acc.real += r.real;
+    });
+    let comMeta = 0, acima = 0;
+    porVendedor.forEach(function (acc) {
+      if (acc.meta > 0) { comMeta++; if (acc.real / acc.meta >= 1) acima++; }
+    });
+    return comMeta > 0 ? (acima / comMeta * 100) : null;
+  }
+  const idxPctConsultores = linhas.findIndex(function (l) { return l.cat.ind === '% Consultores >= 100%'; });
+  if (idxPctConsultores >= 0 && ref) {
+    const linhaAtual = linhas[idxPctConsultores];
+    const mesRealPct = pctConsultoresAcimaDe100(ref.ano, ref.mes);
+    const mesMetaPct = linhaAtual.temMeta ? 100 : null;
+    linhas[idxPctConsultores] = Object.assign({}, linhaAtual, {
+      hist: meses.map(function (mc) { return pctConsultoresAcimaDe100(mc.ano, mc.mes); }),
+      mesReal: mesRealPct,
+      mesMeta: mesMetaPct,
+      mesPct: atingimento(mesMetaPct, mesRealPct, linhaAtual.cat),
+      metaDia: mesMetaPct
+    });
+  }
+
   /* Contexto exibido no resumo: se a seleção cai num único DDD, mostra o
      calendário dele; com vários (ou nenhum), mostra o nacional como
      referência — as contas de cada linha já foram feitas por DDD. */
@@ -4380,6 +4631,7 @@ function renderRodape() {
 function init() {
   carregar();
   garantirCatalogoPadrao();
+  garantirIndicadoresChip();
   rebuildCatIndex();
   definirRefPadrao(false);
   definirMesHiePadrao(false);
