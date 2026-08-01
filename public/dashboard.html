@@ -5232,16 +5232,21 @@ function renderFiltrosVendas() {
 /* Identifica o recorte (hierarquia + mês) do relatório que está na tela —
    mesmo texto aparece na impressão e em cada PDF exportado, já que faz
    parte de #relatorio-conteudo. */
+/* Rótulo curto de cada nível, só para o cabeçalho (a tela e os filtros
+   continuam com o nome completo — aqui é abreviado pra caber numa linha
+   só, inclusive no PDF em A4). */
+const NIVEIS_ABREV = { diretoria: 'Dir', gerente: 'Ger', supervisor: 'Sup', vendedor: 'Vend' };
+
 function renderCabecalhoRelatorio() {
   const partes = NIVEIS.map(function (n) {
     const v = state.filtros[n.key];
-    return '<span>' + esc(n.label) + ': ' +
+    return '<span>' + esc(NIVEIS_ABREV[n.key]) + ': ' +
       (v ? '<span class="is-filtrado">' + esc(v) + '</span>' : 'Todos') + '</span>';
   });
   const mes = state.ref ? MES_ABREV[state.ref.mes - 1] + '/' + state.ref.ano : '—';
   $('#relatorio-cabecalho').innerHTML =
     '<b>Relatório de:</b>' + partes.join('') +
-    '<span>Mês de referência: <span class="is-filtrado">' + esc(mes) + '</span></span>';
+    '<span>Mês: <span class="is-filtrado">' + esc(mes) + '</span></span>';
 }
 
 function renderResumoVendas(ag) {
