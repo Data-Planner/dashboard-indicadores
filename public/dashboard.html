@@ -5540,19 +5540,21 @@ function dataArquivoExportPdf(d) {
 }
 
 /* Um item por checkbox marcado — o nome de arquivo segue exatamente o padrão
-   dd.mm.aa.diretoria / dd.mm.aa.DDD-Gerente / dd.mm.aa.DDD-Supervisor /
-   dd.mm.aa.DDD-Vendedor pedido, com "DDD" = a Diretoria daquele item. */
+   dd.mm.aa.Dir DDD / dd.mm.aa.Dir DDD.Ger.Nome / dd.mm.aa.Dir DDD.Sup.Nome /
+   dd.mm.aa.Dir DDD.Vend.Nome, com "DDD" = a Diretoria daquele item e "Nome"
+   = a pessoa do cargo selecionado (Diretoria não tem pessoa própria, então
+   fica só até o DDD). */
 function coletarItensExportPdf() {
   const prefixo = dataArquivoExportPdf(new Date());
   return $$('#pdf-tree input[type=checkbox]:checked').map(function (cb) {
     const ds = cb.dataset;
     const ddd = ds.ddd || '', gerente = ds.gerente || '', supervisor = ds.supervisor || '', vendedor = ds.vendedor || '';
-    const dddArq = sanitizarNomeArquivoExportPdf(ddd);
+    const baseDiretoria = prefixo + '.Dir ' + sanitizarNomeArquivoExportPdf(ddd);
     let nomeArquivo;
-    if (ds.nivel === 'diretoria') nomeArquivo = prefixo + '.' + dddArq;
-    else if (ds.nivel === 'gerente') nomeArquivo = prefixo + '.' + dddArq + '-' + sanitizarNomeArquivoExportPdf(gerente);
-    else if (ds.nivel === 'supervisor') nomeArquivo = prefixo + '.' + dddArq + '-' + sanitizarNomeArquivoExportPdf(supervisor);
-    else nomeArquivo = prefixo + '.' + dddArq + '-' + sanitizarNomeArquivoExportPdf(vendedor);
+    if (ds.nivel === 'diretoria') nomeArquivo = baseDiretoria;
+    else if (ds.nivel === 'gerente') nomeArquivo = baseDiretoria + '.Ger.' + sanitizarNomeArquivoExportPdf(gerente);
+    else if (ds.nivel === 'supervisor') nomeArquivo = baseDiretoria + '.Sup.' + sanitizarNomeArquivoExportPdf(supervisor);
+    else nomeArquivo = baseDiretoria + '.Vend.' + sanitizarNomeArquivoExportPdf(vendedor);
     return { nivel: ds.nivel, ddd: ddd, gerente: gerente, supervisor: supervisor, vendedor: vendedor, nomeArquivo: nomeArquivo };
   });
 }
