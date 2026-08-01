@@ -227,6 +227,25 @@ body {
 .filterbar-hint[hidden] { display: none; }
 
 /* ==========================================================================
+   Cabeçalho de identificação do relatório (hierarquia + mês filtrados)
+   Aparece na tela, na impressão e em cada PDF exportado — para saber de
+   quem/qual recorte é o arquivo.
+   ========================================================================== */
+.rf-relatorio-cabecalho {
+  display: flex; flex-wrap: wrap; gap: 4px var(--sp-4);
+  align-items: baseline;
+  padding: 9px var(--sp-4);
+  margin-bottom: var(--sp-3);
+  background: var(--rf-bordo-50);
+  border: 1px solid var(--rf-bordo-100);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+}
+.rf-relatorio-cabecalho b { color: var(--rf-bordo-dark); }
+.rf-relatorio-cabecalho span { color: var(--text-muted); }
+.rf-relatorio-cabecalho span.is-filtrado { color: var(--ink); font-weight: 700; }
+
+/* ==========================================================================
    Resumo
    ========================================================================== */
 .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-4); }
@@ -1364,6 +1383,10 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
       <div class="pdf-tree-toolbar">
         <button class="btn btn-ghost btn-sm" type="button" id="pdf-marcar-todos">Marcar todos</button>
         <button class="btn btn-ghost btn-sm" type="button" id="pdf-desmarcar-todos">Desmarcar todos</button>
+        <div class="switch-row" title="Ao marcar um item da árvore, marca também (e gera PDF de) a Diretoria/Gerente/Supervisor acima dele.">
+          <label class="switch"><input type="checkbox" id="pdf-niveis-acima"><span class="track"></span></label>
+          <span>Gerar também os níveis acima</span>
+        </div>
         <span class="pdf-tree-contador" id="pdf-contador">0 itens selecionados</span>
       </div>
       <div class="pdf-tree" id="pdf-tree"></div>
@@ -1686,6 +1709,10 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
 
     <!-- Conteúdo do relatório: é exatamente isto que vira o PDF de cada hierarquia -->
     <div id="relatorio-conteudo">
+      <!-- Cabeçalho: identifica a hierarquia e o mês do recorte que está sendo
+           impresso/exportado — sem isso não dá pra saber de quem é o arquivo. -->
+      <section class="rf-relatorio-cabecalho" id="relatorio-cabecalho"></section>
+
       <!-- Resumo -->
       <section class="summary" id="resumo"></section>
 
@@ -5202,6 +5229,21 @@ function renderFiltrosVendas() {
   }).join('');
 }
 
+/* Identifica o recorte (hierarquia + mês) do relatório que está na tela —
+   mesmo texto aparece na impressão e em cada PDF exportado, já que faz
+   parte de #relatorio-conteudo. */
+function renderCabecalhoRelatorio() {
+  const partes = NIVEIS.map(function (n) {
+    const v = state.filtros[n.key];
+    return '<span>' + esc(n.label) + ': ' +
+      (v ? '<span class="is-filtrado">' + esc(v) + '</span>' : 'Todos') + '</span>';
+  });
+  const mes = state.ref ? MES_ABREV[state.ref.mes - 1] + '/' + state.ref.ano : '—';
+  $('#relatorio-cabecalho').innerHTML =
+    '<b>Relatório de:</b>' + partes.join('') +
+    '<span>Mês de referência: <span class="is-filtrado">' + esc(mes) + '</span></span>';
+}
+
 function renderResumoVendas(ag) {
   const linhas = ag.linhas;
   const comMeta = linhas.filter(function (l) { return l.temMeta; });
@@ -5367,6 +5409,7 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
 function renderTudoVendas() {
   definirRefPadrao(false);
   renderFiltrosVendas();
+  renderCabecalhoRelatorio();
   const ag = agregar();
   renderResumoVendas(ag);
   renderGrupos(ag);
@@ -5453,7 +5496,13 @@ function profundidadeNoExportPdf(el) {
   return d;
 }
 
+/* Com "Gerar também os níveis acima" ligado, um nó conta como marcado (e
+   por tanto vira um PDF) assim que QUALQUER filho estiver marcado — não só
+   quando todos estiverem, como no modo normal. Isso faz o PDF do pai (com
+   os dados agregados dele mesmo, não só do filho marcado) ser gerado junto,
+   sem precisar marcar cada nível manualmente na árvore. */
 function recomputarArvoreExportPdf() {
+  const geraNiveisAcima = $('#pdf-niveis-acima').checked;
   const nos = Array.from($('#pdf-tree').querySelectorAll('.pdf-tree-node'));
   nos.sort(function (a, b) { return profundidadeNoExportPdf(b) - profundidadeNoExportPdf(a); });
   nos.forEach(function (no) {
@@ -5462,8 +5511,12 @@ function recomputarArvoreExportPdf() {
     if (!filhosCb.length) return;
     const todos = filhosCb.every(function (c) { return c.checked && !c.indeterminate; });
     const algum = filhosCb.some(function (c) { return c.checked || c.indeterminate; });
-    cb.checked = todos;
-    cb.indeterminate = !todos && algum;
+    const marcado = geraNiveisAcima ? algum : todos;
+    /* indeterminate só quando NÃO marcado (senão o checkbox fica com checked=true
+       e indeterminate=true ao mesmo tempo, e nesse estado o Chrome deixa de casar
+       com o seletor CSS ":checked" — o que faz o item sumir da exportação). */
+    cb.checked = marcado;
+    cb.indeterminate = !marcado && algum;
   });
 }
 
@@ -5579,6 +5632,7 @@ async function exportarPdfsHierarquia() {
     state.filtros.gerente = item.gerente;
     state.filtros.supervisor = item.supervisor;
     state.filtros.vendedor = item.vendedor;
+    renderCabecalhoRelatorio();
     const ag = agregar();
     renderResumoVendas(ag);
     renderGrupos(ag);
@@ -5769,6 +5823,10 @@ function init() {
     const no = cb.closest('.pdf-tree-node');
     no.querySelectorAll('.pdf-tree-children input[type=checkbox]').forEach(function (c) { c.checked = cb.checked; c.indeterminate = false; });
     cb.indeterminate = false;
+    recomputarArvoreExportPdf();
+    atualizarContadorExportPdf();
+  });
+  $('#pdf-niveis-acima').addEventListener('change', function () {
     recomputarArvoreExportPdf();
     atualizarContadorExportPdf();
   });
