@@ -379,6 +379,72 @@ body {
 .sep-col { width: 6px; padding: 0 !important; background: var(--surface) !important; border-right: 1px solid var(--line) !important; border-left: 1px solid var(--line) !important; }
 .void { color: var(--text-faint) !important; font-weight: 400; }
 
+/* ==========================================================================
+   Relatório Compacto — todos os agrupadores num bloco único, densidade alta,
+   pensado pra caber numa tela só sem rolar. Só entra em vigor com
+   body.modo-compacto (ligado só quando essa área está aberta), pra não
+   afetar em nada o layout normal de Relatórios/Painel Administrativo.
+   ========================================================================== */
+body.modo-compacto { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+body.modo-compacto .rf-header { flex: 0 0 auto; }
+body.modo-compacto .rf-shell {
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  padding-top: var(--sp-3); padding-bottom: var(--sp-3); overflow: hidden;
+}
+body.modo-compacto .rf-shell > footer.rf-foot { display: none; }
+body.modo-compacto #area-compacto.active { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+
+.compacto-filterbar { flex: 0 0 auto; margin-bottom: var(--sp-2); }
+.compacto-cabecalho {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.compacto-cabecalho .rf-relatorio-cabecalho { flex: 1 1 auto; margin-bottom: 0; }
+.compacto-tbl-wrap {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+  border: 1px solid var(--line); border-radius: var(--r-md);
+}
+.tbl-compacto {
+  width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0;
+  font-size: 10.5px;
+}
+.tbl-compacto col.c-grupo { width: 68px; }
+.tbl-compacto col.c-ind   { width: 165px; }
+.tbl-compacto col.c-tipo  { width: 40px; }
+.tbl-compacto col.c-num   { width: 80px; }
+.tbl-compacto col.c-sep   { width: 4px; }
+.tbl-compacto thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface-alt); color: var(--text); font-weight: 700;
+  font-size: 9.5px; padding: 3px 5px; border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line-soft); white-space: nowrap;
+}
+.tbl-compacto thead tr.band th {
+  font-size: 8.5px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--text-muted); background: #F1F5F9; padding: 2px 5px;
+  border-bottom: 1px solid var(--line);
+}
+.tbl-compacto thead tr.band th.band-real  { color: var(--text-muted); background: #EFF3F9; }
+.tbl-compacto thead tr.band th.band-month { color: var(--rf-bordo); background: var(--rf-bordo-50); }
+.tbl-compacto thead tr.band th.band-week  { color: #6D28D9; background: #F7F5FF; }
+.tbl-compacto thead tr.band th.band-day   { color: var(--info); background: #EFF4FF; }
+.tbl-compacto tbody td {
+  padding: 1.5px 5px; line-height: 1.2;
+  border-bottom: 1px solid var(--line-soft); border-right: 1px solid var(--line-soft);
+  color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tbl-compacto tbody tr:nth-child(even) td { background: var(--surface-alt); }
+.tbl-compacto tbody tr:hover td { background: var(--rf-bordo-50); }
+.tbl-compacto .col-grupo {
+  text-align: left; vertical-align: middle; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .3px; font-size: 9px; color: var(--rf-bordo-dark);
+  background: var(--rf-bordo-50) !important; border-right: 2px solid var(--rf-bordo-100) !important;
+}
+.tbl-compacto .col-tipo { font-size: 9.5px; padding-left: 3px !important; padding-right: 3px !important; }
+.tbl-compacto .col-ind { min-width: 0; font-size: 10.5px; font-weight: 500; white-space: nowrap !important; }
+.tbl-compacto .pct .bar { display: none; } /* barra de progresso some — não cabe na altura da linha */
+
 .ind-cell { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .swatch-na {
   display: inline-block; width: 13px; text-align: center;
@@ -1409,6 +1475,7 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
   <div class="rf-header-sep"></div>
   <nav class="rf-nav" id="nav-area">
     <button class="rf-nav-item" data-area="relatorios"><span class="ico">▣</span>Relatórios</button>
+    <button class="rf-nav-item" data-area="compacto"><span class="ico">☰</span>Relatório Compacto</button>
     <button class="rf-nav-item" data-area="admin"><span class="ico">⚙</span>Painel Administrativo</button>
   </nav>
   <div class="rf-header-spacer"></div>
@@ -1739,6 +1806,43 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
       <div>Cada Diretoria (DDD) usa o próprio calendário de dias úteis, conforme cadastrado em
            <strong>Painel Administrativo → Feriados por DDD</strong>.</div>
     </footer>
+  </section>
+
+  <!-- ====================================================================
+       ÁREA: Relatório Compacto — tudo num bloco único, pensado pra caber
+       numa tela só, sem precisar rolar. Filtros próprios aqui (mesmo
+       state.filtros/mês da tela de Relatórios — mudar num lugar reflete no
+       outro).
+       ==================================================================== -->
+  <section class="panel" id="area-compacto">
+    <section class="card filterbar no-print compacto-filterbar">
+      <span class="filterbar-label">Filtros</span>
+      <div class="field field-grow">
+        <label for="fc-diretoria">Diretoria</label>
+        <select id="fc-diretoria"><option value="">Todos</option></select>
+      </div>
+      <div class="field field-grow">
+        <label for="fc-gerente">Gerente</label>
+        <select id="fc-gerente"><option value="">Todos</option></select>
+      </div>
+      <div class="field field-grow">
+        <label for="fc-supervisor">Supervisor</label>
+        <select id="fc-supervisor"><option value="">Todos</option></select>
+      </div>
+      <div class="field field-grow">
+        <label for="fc-vendedor">Vendedor</label>
+        <select id="fc-vendedor"><option value="">Todos</option></select>
+      </div>
+      <div class="field">
+        <label for="fc-ref">Mês de referência</label>
+        <select id="fc-ref"></select>
+      </div>
+      <button class="btn btn-ghost" id="btn-compacto-limpar-filtros">Limpar filtros</button>
+    </section>
+    <div class="compacto-cabecalho no-print">
+      <span class="rf-relatorio-cabecalho" id="compacto-cabecalho"></span>
+    </div>
+    <div class="compacto-tbl-wrap" id="compacto-tbl-wrap"></div>
   </section>
 
   <footer class="rf-foot">
@@ -2805,7 +2909,9 @@ function irParaArea(area) {
   $$('#nav-area .rf-nav-item').forEach(function (b) { b.classList.toggle('active', b.dataset.area === area); });
   $('#area-admin').classList.toggle('active', area === 'admin');
   $('#area-relatorios').classList.toggle('active', area === 'relatorios');
+  $('#area-compacto').classList.toggle('active', area === 'compacto');
   $('#nav-admin').style.display = area === 'admin' ? '' : 'none';
+  document.body.classList.toggle('modo-compacto', area === 'compacto');
   atualizarHash();
 }
 
@@ -2821,13 +2927,13 @@ function irParaAba(tab) {
 }
 
 function atualizarHash() {
-  const alvo = state.area === 'admin' ? 'admin:' + state.tab : 'relatorios';
+  const alvo = state.area === 'admin' ? 'admin:' + state.tab : state.area;
   if (location.hash.slice(1) !== alvo) history.replaceState(null, '', '#' + alvo);
 }
 
 function irParaHash(hash) {
   const partes = hash.split(':');
-  if (partes[0] === 'relatorios') { irParaArea('relatorios'); return; }
+  if (partes[0] === 'relatorios' || partes[0] === 'compacto') { irParaArea(partes[0]); return; }
   irParaArea('admin');
   irParaAba(ABAS_ADMIN.includes(partes[1]) ? partes[1] : 'calendario');
 }
@@ -5195,19 +5301,29 @@ function definirRefPadrao(forcar) {
   }
 }
 
+/* Relatórios e Relatório Compacto têm cada um sua própria barra de filtros
+   (ids com prefixo "f-" e "fc-"), mas as duas refletem e alteram exatamente
+   o mesmo state.filtros/state.ref — por isso essa função popula os dois
+   conjuntos de <select> sempre que roda. */
+const PREFIXOS_FILTRO = ['f-', 'fc-'];
+
 function renderFiltrosVendas() {
   /* opcoesHierarquia() já valida/limpa state.filtros[n.key] internamente
      quando o valor selecionado não existe mais na hierarquia vigente do
      mês referência — os <select> abaixo só refletem o resultado. */
   const ops = opcoesHierarquia();
   NIVEIS.forEach(function (n) {
-    const sel = $('#f-' + n.key);
     const lista = ops[n.key];
     const atual = state.filtros[n.key];
-    sel.innerHTML = '<option value="">Todos</option>' + lista.map(function (v) {
+    const opcoesHtml = '<option value="">Todos</option>' + lista.map(function (v) {
       return '<option value="' + esc(v) + '"' + (v === atual ? ' selected' : '') + '>' + esc(v) + '</option>';
     }).join('');
-    sel.disabled = lista.length === 0;
+    PREFIXOS_FILTRO.forEach(function (p) {
+      const sel = $('#' + p + n.key);
+      if (!sel) return;
+      sel.innerHTML = opcoesHtml;
+      sel.disabled = lista.length === 0;
+    });
   });
 
   const hint = $('#filtros-hint');
@@ -5221,14 +5337,17 @@ function renderFiltrosVendas() {
   const per = new Set();
   state.records.forEach(function (r) { if (r.ano && r.mes) per.add(r.ano * 100 + r.mes); });
   const lista = Array.from(per).sort(function (a, b) { return b - a; });
-  const selRef = $('#f-ref');
   if (!lista.length && state.ref) lista.push(state.ref.ano * 100 + state.ref.mes);
   const atual = state.ref ? state.ref.ano * 100 + state.ref.mes : null;
-  selRef.innerHTML = lista.map(function (k) {
+  const opcoesRefHtml = lista.map(function (k) {
     const ano = Math.floor(k / 100), mes = k % 100;
     return '<option value="' + k + '"' + (k === atual ? ' selected' : '') + '>' +
            MES_ABREV[mes - 1] + '/' + ano + '</option>';
   }).join('');
+  PREFIXOS_FILTRO.forEach(function (p) {
+    const sel = $('#' + p + 'ref');
+    if (sel) sel.innerHTML = opcoesRefHtml;
+  });
 }
 
 /* Identifica o recorte (hierarquia + mês) do relatório que está na tela —
@@ -5239,16 +5358,24 @@ function renderFiltrosVendas() {
    só, inclusive no PDF em A4). */
 const NIVEIS_ABREV = { diretoria: 'Dir', gerente: 'Ger', supervisor: 'Sup', vendedor: 'Vend' };
 
-function renderCabecalhoRelatorio() {
+function montarCabecalhoRelatorioHtml() {
   const partes = NIVEIS.map(function (n) {
     const v = state.filtros[n.key];
     return '<span>' + esc(NIVEIS_ABREV[n.key]) + ': ' +
       (v ? '<span class="is-filtrado">' + esc(v) + '</span>' : 'Todos') + '</span>';
   });
   const mes = state.ref ? MES_ABREV[state.ref.mes - 1] + '/' + state.ref.ano : '—';
-  $('#relatorio-cabecalho').innerHTML =
-    '<b>Relatório de:</b>' + partes.join('') +
+  return '<b>Relatório de:</b>' + partes.join('') +
     '<span>Mês: <span class="is-filtrado">' + esc(mes) + '</span></span>';
+}
+
+/* Mesmo cabeçalho aparece na tela de Relatórios (tela/impressão/PDF) e na
+   tela de Relatório Compacto — os dois refletem os mesmos state.filtros. */
+function renderCabecalhoRelatorio() {
+  const html = montarCabecalhoRelatorioHtml();
+  $('#relatorio-cabecalho').innerHTML = html;
+  const compacto = $('#compacto-cabecalho');
+  if (compacto) compacto.innerHTML = html;
 }
 
 function renderResumoVendas(ag) {
@@ -5413,6 +5540,92 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
          '<tbody>' + corpo + '</tbody></table></div></section>';
 }
 
+/* ==========================================================================
+   Relatório Compacto — todos os agrupadores numa tabela única (sem cartão
+   por grupo, sem banner colorido por grupo), com o nome do agrupador como
+   coluna à esquerda (mesclada por grupo). Reaproveita a mesma agregação e
+   as mesmas células (fmtValor/celPct) do relatório normal — só muda o
+   layout, os números são exatamente os mesmos.
+   ========================================================================== */
+function renderRelatorioCompacto(ag) {
+  const alvo = $('#compacto-tbl-wrap');
+  if (!alvo) return;
+  if (!state.records.length) {
+    alvo.innerHTML = '<div class="card"><div class="empty-state">' +
+      '<div class="es-icon">▦</div><div class="es-title">Nenhuma planilha de vendas importada</div>' +
+      '</div></div>';
+    return;
+  }
+
+  const porGrupo = {};
+  ag.linhas.forEach(function (l) { (porGrupo[l.cat.grupo] = porGrupo[l.cat.grupo] || []).push(l); });
+  const gruposComDado = state.grupos.filter(function (g) { return porGrupo[g]; });
+
+  const colgroup =
+    '<colgroup>' +
+      '<col class="c-grupo">' +
+      '<col class="c-ind">' +
+      '<col class="c-tipo">' +
+      '<col class="c-num"><col class="c-num"><col class="c-num">' +
+      '<col class="c-sep">' +
+      '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
+      '<col class="c-sep">' +
+      '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
+      '<col class="c-sep">' +
+      '<col class="c-num">' +
+    '</colgroup>';
+
+  const thBand =
+    '<tr class="band">' +
+      '<th rowspan="2" class="col-grupo">Grupo</th>' +
+      '<th rowspan="2" class="col-ind" style="text-align:left">Indicador</th>' +
+      '<th rowspan="2" class="col-tipo">Tipo</th>' +
+      '<th colspan="3" class="band-real">[ Realizado ]</th>' +
+      '<th rowspan="2" class="sep-col"></th>' +
+      '<th colspan="4" class="band-month">[ Mês Atual ]</th>' +
+      '<th rowspan="2" class="sep-col"></th>' +
+      '<th colspan="4" class="band-week">[ Semana Atual ]</th>' +
+      '<th rowspan="2" class="sep-col"></th>' +
+      '<th colspan="1" class="band-day">[ Meta Dia ]</th>' +
+    '</tr>';
+
+  const thCols =
+    '<tr>' +
+      ag.meses.map(function (m) { return '<th class="num">' + m.rotulo + '</th>'; }).join('') +
+      '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Mês</th>' +
+      '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Sem.</th>' +
+      '<th class="num">%</th>' +
+    '</tr>';
+
+  const corpo = gruposComDado.map(function (g) {
+    const linhas = porGrupo[g];
+    return linhas.map(function (l, i) {
+      const c = l.cat;
+      return '<tr>' +
+        (i === 0 ? '<td class="col-grupo" rowspan="' + linhas.length + '">' + esc(g) + '</td>' : '') +
+        '<td class="col-ind"><div class="ind-cell">' + (c.foco ? '<span class="ind-foco-marca" title="Indicador foco">★</span>' : '') + '<span>' + esc(c.ind) + '</span></div></td>' +
+        '<td class="col-tipo">' + esc(c.tipo) + '</td>' +
+        l.hist.map(function (v) { return '<td class="num">' + fmtValor(v, c.tipo) + '</td>'; }).join('') +
+        '<td class="sep-col"></td>' +
+        '<td class="num">' + (l.temMeta ? fmtValor(l.mesMeta, c.tipo) : '<span class="void">—</span>') + '</td>' +
+        '<td class="num num-real">' + fmtValor(l.mesReal, c.tipo) + '</td>' +
+        celPct(l.mesPct, l.temMeta) +
+        '<td class="num">' + fmtValor(l.proj, c.tipo) + '</td>' +
+        '<td class="sep-col"></td>' +
+        '<td class="num">' + (l.temMeta ? fmtValor(l.semMeta, c.tipo) : '<span class="void">—</span>') + '</td>' +
+        '<td class="num num-real">' + fmtValor(l.semReal, c.tipo) + '</td>' +
+        celPct(l.semPct, l.temMeta) +
+        '<td class="num">' + fmtValor(l.projSem, c.tipo) + '</td>' +
+        '<td class="sep-col"></td>' +
+        celPct(l.diaPct, l.temMeta, l.metaDia == null ? null : 'Meta dia: ' + fmtValor(l.metaDia, c.tipo)) +
+      '</tr>';
+    }).join('');
+  }).join('');
+
+  alvo.innerHTML = '<table class="tbl-compacto">' + colgroup +
+    '<thead>' + thBand + thCols + '</thead><tbody>' + corpo + '</tbody></table>';
+}
+
 function renderTudoVendas() {
   definirRefPadrao(false);
   renderFiltrosVendas();
@@ -5420,6 +5633,7 @@ function renderTudoVendas() {
   const ag = agregar();
   renderResumoVendas(ag);
   renderGrupos(ag);
+  renderRelatorioCompacto(ag);
   renderRodape();
 }
 
@@ -5783,23 +5997,29 @@ function init() {
   $('#ag-cancelar').addEventListener('click', resetFormAgendamento);
   $('#ag-exec-input').addEventListener('change', function (e) { aoEscolherPastaExecucao(e.target.files); });
 
-  /* --- Relatórios / Dashboard --- */
-  $('#f-ref').addEventListener('change', function (e) {
-    const k = +e.target.value;
-    state.ref = { ano: Math.floor(k / 100), mes: k % 100 };
-    renderTudoVendas();
-  });
-  NIVEIS.forEach(function (n, i) {
-    $('#f-' + n.key).addEventListener('change', function (e) {
-      state.filtros[n.key] = e.target.value;
-      NIVEIS.slice(i + 1).forEach(function (m) { state.filtros[m.key] = ''; });
+  /* --- Relatórios / Dashboard (e o mesmo pra Relatório Compacto, prefixo fc-) --- */
+  PREFIXOS_FILTRO.forEach(function (p) {
+    $('#' + p + 'ref').addEventListener('change', function (e) {
+      const k = +e.target.value;
+      state.ref = { ano: Math.floor(k / 100), mes: k % 100 };
       renderTudoVendas();
     });
   });
-  $('#btn-limpar-filtros').addEventListener('click', function () {
+  NIVEIS.forEach(function (n, i) {
+    PREFIXOS_FILTRO.forEach(function (p) {
+      $('#' + p + n.key).addEventListener('change', function (e) {
+        state.filtros[n.key] = e.target.value;
+        NIVEIS.slice(i + 1).forEach(function (m) { state.filtros[m.key] = ''; });
+        renderTudoVendas();
+      });
+    });
+  });
+  function limparFiltros() {
     state.filtros = { diretoria: '', gerente: '', supervisor: '', vendedor: '' };
     renderTudoVendas();
-  });
+  }
+  $('#btn-limpar-filtros').addEventListener('click', limparFiltros);
+  $('#btn-compacto-limpar-filtros').addEventListener('click', limparFiltros);
   $('#btn-imprimir').addEventListener('click', function () { window.print(); });
   $('#btn-importar-vendas').addEventListener('click', function () { $('#input-vendas').click(); });
   $('#input-vendas').addEventListener('change', function (e) {
