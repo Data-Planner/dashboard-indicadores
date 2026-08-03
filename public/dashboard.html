@@ -409,7 +409,7 @@ body.modo-compacto #area-compacto.active { flex: 1 1 auto; min-height: 0; displa
   width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0;
   font-size: 10.5px;
 }
-.tbl-compacto col.c-grupo { width: 68px; }
+.tbl-compacto col.c-grupo { width: 80px; }
 .tbl-compacto col.c-ind   { width: 165px; }
 .tbl-compacto col.c-tipo  { width: 40px; }
 .tbl-compacto col.c-num   { width: 80px; }
@@ -466,11 +466,11 @@ body.modo-compacto #area-compacto.active { flex: 1 1 auto; min-height: 0; displa
    uma linha por indicador abaixo da meta, sem texto corrido: tudo em colunas,
    pra caber junto com a tabela principal numa exportação de página única. */
 .tbl-plano { width: 100%; }
-.tbl-plano col.c-sev   { width: 64px; }
-.tbl-plano col.c-grupo { width: 68px; }
+.tbl-plano col.c-sev   { width: 78px; }
+.tbl-plano col.c-grupo { width: 80px; }
 .tbl-plano col.c-ind   { width: 165px; }
-.tbl-plano col.c-num   { width: 56px; }
-.tbl-plano col.c-acao  { width: auto; }
+.tbl-plano col.c-num   { width: 80px; } /* mesma largura da tabela principal — cabe valores em R$ */
+.tbl-plano col.c-acao  { width: 200px; }
 .tbl-plano .plano-grupo { font-weight: 700; text-transform: uppercase; font-size: 8.5px; color: var(--text-muted); }
 .tbl-plano .plano-acao-txt { text-align: left; white-space: normal !important; color: var(--text-muted); }
 .tbl-plano tr.plano-linha-critico td { background: var(--bad-bg); }
@@ -1130,6 +1130,17 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
   body { background: #fff; }
   .group-card { break-inside: avoid; box-shadow: none; }
   .rf-shell { max-width: none; padding: 0; }
+  @page { margin: 10mm; }
+}
+
+/* Cabeçalho com a logomarca — só aparece na impressão (tela normal fica sem
+   ele) e nos PDFs exportados (onde é mostrado por um instante enquanto o
+   html2canvas tira a "foto"). Fica sempre como o primeiro elemento do
+   conteúdo impresso/exportado, o mais perto possível do topo da folha. */
+.print-logo-header { display: none; margin-bottom: 8px; }
+.print-logo-header img { height: 30px; width: auto; display: block; }
+@media print {
+  .print-logo-header { display: block !important; }
 }
 
 /* ==========================================================================
@@ -1812,6 +1823,7 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
 
     <!-- Conteúdo do relatório: é exatamente isto que vira o PDF de cada hierarquia -->
     <div id="relatorio-conteudo">
+      <div class="print-logo-header"></div>
       <!-- Cabeçalho: identifica a hierarquia e o mês do recorte que está sendo
            impresso/exportado — sem isso não dá pra saber de quem é o arquivo. -->
       <section class="rf-relatorio-cabecalho" id="relatorio-cabecalho"></section>
@@ -1917,6 +1929,7 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
 
     <!-- Conteúdo do relatório: é exatamente isto que vira o PDF de 1 página -->
     <div id="plano-conteudo">
+      <div class="print-logo-header"></div>
       <div class="compacto-cabecalho no-print">
         <span class="rf-relatorio-cabecalho" id="plano-cabecalho"></span>
       </div>
@@ -5575,7 +5588,7 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
       '<col class="c-sep">' +
       '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
       '<col class="c-sep">' +
-      '<col class="c-num">' +
+      '<col class="c-num"><col class="c-num">' +
     '</colgroup>';
 
   const thBand =
@@ -5588,7 +5601,7 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
       '<th rowspan="2" class="sep-col"></th>' +
       '<th colspan="4" class="band-week">[ Semana Atual ]</th>' +
       '<th rowspan="2" class="sep-col"></th>' +
-      '<th colspan="1" class="band-day">[ Meta Dia ]</th>' +
+      '<th colspan="2" class="band-day">[ Meta Dia ]</th>' +
     '</tr>';
 
   const thCols =
@@ -5596,7 +5609,7 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
       ag.meses.map(function (m) { return '<th class="num">' + m.rotulo + '</th>'; }).join('') +
       '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Mês</th>' +
       '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Sem.</th>' +
-      '<th class="num">%</th>' +
+      '<th class="num">Qtde</th><th class="num">%</th>' +
     '</tr>';
 
   const corpo = linhas.map(function (l) {
@@ -5616,7 +5629,8 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
       celPct(l.semPct, l.temMeta) +
       '<td class="num">' + fmtValor(l.projSem, c.tipo) + '</td>' +
       '<td class="sep-col"></td>' +
-      celPct(l.diaPct, l.temMeta, l.metaDia == null ? null : 'Meta dia: ' + fmtValor(l.metaDia, c.tipo)) +
+      '<td class="num">' + (l.metaDia == null ? '<span class="void">—</span>' : fmtValor(l.metaDia, c.tipo)) + '</td>' +
+      celPct(l.diaPct, l.temMeta) +
     '</tr>';
   }).join('');
 
@@ -5654,7 +5668,7 @@ function montarTabelaCompactaHtml(ag) {
       '<col class="c-sep">' +
       '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
       '<col class="c-sep">' +
-      '<col class="c-num">' +
+      '<col class="c-num"><col class="c-num">' +
     '</colgroup>';
 
   const thBand =
@@ -5668,7 +5682,7 @@ function montarTabelaCompactaHtml(ag) {
       '<th rowspan="2" class="sep-col"></th>' +
       '<th colspan="4" class="band-week">[ Semana Atual ]</th>' +
       '<th rowspan="2" class="sep-col"></th>' +
-      '<th colspan="1" class="band-day">[ Meta Dia ]</th>' +
+      '<th colspan="2" class="band-day">[ Meta Dia ]</th>' +
     '</tr>';
 
   const thCols =
@@ -5676,7 +5690,7 @@ function montarTabelaCompactaHtml(ag) {
       ag.meses.map(function (m) { return '<th class="num">' + m.rotulo + '</th>'; }).join('') +
       '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Mês</th>' +
       '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Sem.</th>' +
-      '<th class="num">%</th>' +
+      '<th class="num">Qtde</th><th class="num">%</th>' +
     '</tr>';
 
   const corpo = gruposComDado.map(function (g) {
@@ -5699,7 +5713,8 @@ function montarTabelaCompactaHtml(ag) {
         celPct(l.semPct, l.temMeta) +
         '<td class="num">' + fmtValor(l.projSem, c.tipo) + '</td>' +
         '<td class="sep-col"></td>' +
-        celPct(l.diaPct, l.temMeta, l.metaDia == null ? null : 'Meta dia: ' + fmtValor(l.metaDia, c.tipo)) +
+        '<td class="num">' + (l.metaDia == null ? '<span class="void">—</span>' : fmtValor(l.metaDia, c.tipo)) + '</td>' +
+        celPct(l.diaPct, l.temMeta) +
       '</tr>';
     }).join('');
   }).join('');
@@ -5948,10 +5963,24 @@ function coletarItensExportPdf() {
   });
 }
 
+/* O cabeçalho com a logomarca (.print-logo-header) fica escondido na tela
+   normal e só aparece via @media print — mas html2canvas tira a "foto" do
+   estado normal da tela, não do modo impressão. Por isso, pros PDFs, ele
+   precisa ser mostrado manualmente só durante a captura. */
+async function html2canvasComLogo(el, opcoes) {
+  const logo = el.querySelector('.print-logo-header');
+  if (logo) logo.style.display = 'block';
+  try {
+    return await html2canvas(el, opcoes);
+  } finally {
+    if (logo) logo.style.display = '';
+  }
+}
+
 /* Screenshot do conteúdo do relatório (html2canvas) + montagem do PDF em A4
    (jsPDF), paginando se o conteúdo for mais alto que uma página. */
 async function gerarPdfDoElementoExportPdf(el) {
-  const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+  const canvas = await html2canvasComLogo(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = pdf.internal.pageSize.getWidth();
@@ -5988,7 +6017,7 @@ async function gerarPdfDoElementoExportPdf(el) {
    página só. Usado pelo PDF do Relatório + Plano de Ação, que precisa sair
    numa única folha. */
 async function gerarPdfUmaPaginaExportPdf(el) {
-  const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+  const canvas = await html2canvasComLogo(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = pdf.internal.pageSize.getWidth();
@@ -6156,6 +6185,17 @@ function renderRodape() {
    18. Inicialização
    ========================================================================== */
 
+/* Clona a logomarca já usada no cabeçalho do sistema pros cabeçalhos de
+   impressão/PDF — evita duplicar o base64 da imagem no HTML. */
+function popularLogosImpressao() {
+  const origem = document.querySelector('.rf-logo-chip img');
+  if (!origem) return;
+  $$('.print-logo-header').forEach(function (div) {
+    div.innerHTML = '';
+    div.appendChild(origem.cloneNode(true));
+  });
+}
+
 function init() {
   carregar();
   garantirCatalogoPadrao();
@@ -6165,6 +6205,7 @@ function init() {
   definirRefPadrao(false);
   definirMesHiePadrao(false);
   resetFormAgendamento();
+  popularLogosImpressao();
   renderTudoAdmin();
   renderTudoVendas();
 
