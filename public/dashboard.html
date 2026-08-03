@@ -448,6 +448,41 @@ body.modo-compacto #area-compacto.active { flex: 1 1 auto; min-height: 0; displa
 .tbl-compacto .col-ind { min-width: 0; font-size: 10.5px; font-weight: 500; white-space: nowrap !important; }
 .tbl-compacto .pct .bar { display: none; } /* barra de progresso some — não cabe na altura da linha */
 
+/* ==========================================================================
+   Relatório + Plano de Ação — mesma tabela em bloco único do Relatório
+   Compacto, mas aqui a página rola normalmente (há o quadro do plano de
+   ação abaixo, de propósito, então não força tudo numa tela só).
+   ========================================================================== */
+.plano-tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); margin-bottom: var(--sp-4); }
+
+.plano-card { padding: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-5); }
+.plano-head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-3); }
+.plano-head h3 { font-size: var(--fs-lg); margin: 0; }
+.plano-resumo { display: flex; gap: 6px; }
+.plano-lista { display: flex; flex-direction: column; gap: 6px; }
+.plano-item {
+  display: grid;
+  grid-template-columns: 80px 100px minmax(160px, 260px) 56px 1fr;
+  align-items: center; gap: var(--sp-3);
+  padding: 8px 10px;
+  border: 1px solid var(--line); border-left: 3px solid var(--text-faint);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+}
+.plano-item-critico { border-left-color: var(--bad); background: var(--bad-bg); }
+.plano-item-atencao { border-left-color: #F59E0B; background: var(--warn-bg); }
+.plano-item-sev { justify-self: start; }
+.plano-item-grupo { font-weight: 700; text-transform: uppercase; font-size: var(--fs-xs); color: var(--text-muted); }
+.plano-item-nome { font-weight: 600; color: var(--text); }
+.plano-item-pct { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.plano-item-detalhe { color: var(--text-muted); }
+.plano-vazio { color: var(--ok-strong); font-weight: 600; padding: 10px 0; }
+
+@media (max-width: 900px) {
+  .plano-item { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; }
+  .plano-item-detalhe { grid-column: 1 / -1; }
+}
+
 .ind-cell { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .swatch-na {
   display: inline-block; width: 13px; text-align: center;
@@ -1479,6 +1514,7 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
   <nav class="rf-nav" id="nav-area">
     <button class="rf-nav-item" data-area="relatorios"><span class="ico">▣</span>Relatórios</button>
     <button class="rf-nav-item" data-area="compacto"><span class="ico">☰</span>Relatório Compacto</button>
+    <button class="rf-nav-item" data-area="plano"><span class="ico">◆</span>Relatório + Plano de Ação</button>
     <button class="rf-nav-item" data-area="admin"><span class="ico">⚙</span>Painel Administrativo</button>
   </nav>
   <div class="rf-header-spacer"></div>
@@ -1846,6 +1882,46 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
       <span class="rf-relatorio-cabecalho" id="compacto-cabecalho"></span>
     </div>
     <div class="compacto-tbl-wrap" id="compacto-tbl-wrap"></div>
+  </section>
+
+  <!-- ====================================================================
+       ÁREA: Relatório + Plano de Ação — mesma tabela em bloco único do
+       Relatório Compacto, com um quadro abaixo analisando os indicadores
+       abaixo da meta do recorte filtrado e sugerindo uma ação para cada um.
+       Página rola normalmente (ao contrário do Compacto, aqui há conteúdo
+       a mais abaixo da tabela de propósito).
+       ==================================================================== -->
+  <section class="panel" id="area-plano">
+    <section class="card filterbar no-print">
+      <span class="filterbar-label">Filtros</span>
+      <div class="field field-grow">
+        <label for="fp-diretoria">Diretoria</label>
+        <select id="fp-diretoria"><option value="">Todos</option></select>
+      </div>
+      <div class="field field-grow">
+        <label for="fp-gerente">Gerente</label>
+        <select id="fp-gerente"><option value="">Todos</option></select>
+      </div>
+      <div class="field field-grow">
+        <label for="fp-supervisor">Supervisor</label>
+        <select id="fp-supervisor"><option value="">Todos</option></select>
+      </div>
+      <div class="field field-grow">
+        <label for="fp-vendedor">Vendedor</label>
+        <select id="fp-vendedor"><option value="">Todos</option></select>
+      </div>
+      <div class="field">
+        <label for="fp-ref">Mês de referência</label>
+        <select id="fp-ref"></select>
+      </div>
+      <button class="btn btn-ghost" id="btn-plano-limpar-filtros">Limpar filtros</button>
+    </section>
+    <div class="compacto-cabecalho no-print">
+      <span class="rf-relatorio-cabecalho" id="plano-cabecalho"></span>
+    </div>
+    <div class="plano-tbl-wrap" id="plano-tbl-wrap"></div>
+
+    <div id="plano-acao-wrap"></div>
   </section>
 
   <footer class="rf-foot">
@@ -2913,6 +2989,7 @@ function irParaArea(area) {
   $('#area-admin').classList.toggle('active', area === 'admin');
   $('#area-relatorios').classList.toggle('active', area === 'relatorios');
   $('#area-compacto').classList.toggle('active', area === 'compacto');
+  $('#area-plano').classList.toggle('active', area === 'plano');
   $('#nav-admin').style.display = area === 'admin' ? '' : 'none';
   document.body.classList.toggle('modo-compacto', area === 'compacto');
   atualizarHash();
@@ -2936,7 +3013,7 @@ function atualizarHash() {
 
 function irParaHash(hash) {
   const partes = hash.split(':');
-  if (partes[0] === 'relatorios' || partes[0] === 'compacto') { irParaArea(partes[0]); return; }
+  if (partes[0] === 'relatorios' || partes[0] === 'compacto' || partes[0] === 'plano') { irParaArea(partes[0]); return; }
   irParaArea('admin');
   irParaAba(ABAS_ADMIN.includes(partes[1]) ? partes[1] : 'calendario');
 }
@@ -5308,7 +5385,7 @@ function definirRefPadrao(forcar) {
    (ids com prefixo "f-" e "fc-"), mas as duas refletem e alteram exatamente
    o mesmo state.filtros/state.ref — por isso essa função popula os dois
    conjuntos de <select> sempre que roda. */
-const PREFIXOS_FILTRO = ['f-', 'fc-'];
+const PREFIXOS_FILTRO = ['f-', 'fc-', 'fp-'];
 
 function renderFiltrosVendas() {
   /* opcoesHierarquia() já valida/limpa state.filtros[n.key] internamente
@@ -5372,13 +5449,16 @@ function montarCabecalhoRelatorioHtml() {
     '<span>Mês: <span class="is-filtrado">' + esc(mes) + '</span></span>';
 }
 
-/* Mesmo cabeçalho aparece na tela de Relatórios (tela/impressão/PDF) e na
-   tela de Relatório Compacto — os dois refletem os mesmos state.filtros. */
+/* Mesmo cabeçalho aparece na tela de Relatórios (tela/impressão/PDF), no
+   Relatório Compacto e no Relatório + Plano de Ação — todos refletem os
+   mesmos state.filtros. */
 function renderCabecalhoRelatorio() {
   const html = montarCabecalhoRelatorioHtml();
   $('#relatorio-cabecalho').innerHTML = html;
-  const compacto = $('#compacto-cabecalho');
-  if (compacto) compacto.innerHTML = html;
+  ['#compacto-cabecalho', '#plano-cabecalho'].forEach(function (sel) {
+    const el = $(sel);
+    if (el) el.innerHTML = html;
+  });
 }
 
 function renderResumoVendas(ag) {
@@ -5550,14 +5630,11 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
    as mesmas células (fmtValor/celPct) do relatório normal — só muda o
    layout, os números são exatamente os mesmos.
    ========================================================================== */
-function renderRelatorioCompacto(ag) {
-  const alvo = $('#compacto-tbl-wrap');
-  if (!alvo) return;
+function montarTabelaCompactaHtml(ag) {
   if (!state.records.length) {
-    alvo.innerHTML = '<div class="card"><div class="empty-state">' +
+    return '<div class="card"><div class="empty-state">' +
       '<div class="es-icon">▦</div><div class="es-title">Nenhuma planilha de vendas importada</div>' +
       '</div></div>';
-    return;
   }
 
   const porGrupo = {};
@@ -5625,8 +5702,97 @@ function renderRelatorioCompacto(ag) {
     }).join('');
   }).join('');
 
-  alvo.innerHTML = '<table class="tbl-compacto">' + colgroup +
+  return '<table class="tbl-compacto">' + colgroup +
     '<thead>' + thBand + thCols + '</thead><tbody>' + corpo + '</tbody></table>';
+}
+
+/* Mesma tabela em bloco único aparece no Relatório Compacto e no
+   Relatório + Plano de Ação — os dois refletem os mesmos state.filtros. */
+function renderRelatorioCompacto(ag) {
+  const html = montarTabelaCompactaHtml(ag);
+  ['#compacto-tbl-wrap', '#plano-tbl-wrap'].forEach(function (sel) {
+    const el = $(sel);
+    if (el) el.innerHTML = html;
+  });
+}
+
+/* ==========================================================================
+   Plano de Ação — análise por regras (sem IA/servidor: é só este arquivo
+   HTML rodando no navegador) do recorte filtrado atual. Todo indicador com
+   meta neste nível e abaixo de 100% de atingimento vira um item do plano,
+   do pior pra melhor, com o número real (não texto genérico) e uma
+   recomendação padrão conforme a gravidade.
+   ========================================================================== */
+const PLANO_SEVERIDADE = {
+  critico: { label: 'Crítico', chip: 'chip-bad',
+    acao: 'Ação prioritária: reforçar imediatamente as ações comerciais para reverter esse resultado ainda neste mês.' },
+  atencao: { label: 'Atenção', chip: 'chip-new',
+    acao: 'Ação recomendada: acompanhar de perto e reforçar pontualmente até o fim do mês.' }
+};
+
+function classificarSeveridadePlano(pct) {
+  if (pct < 70) return 'critico';
+  if (pct < 100) return 'atencao';
+  return null;
+}
+
+/* Frase com os números reais do indicador — considera indicadores "inverso"
+   (quanto menor, melhor), cujo sentido de "falta"/"excesso" é o oposto. */
+function descricaoGapPlano(l) {
+  const c = l.cat;
+  const meta = fmtValor(l.mesMeta, c.tipo), real = fmtValor(l.mesReal, c.tipo);
+  if (c.inverso) {
+    const excesso = l.mesReal - l.mesMeta;
+    return excesso > 0
+      ? 'excedeu o limite em ' + fmtValor(excesso, c.tipo) + ' (meta: até ' + meta + ', realizado: ' + real + ')'
+      : 'dentro do limite (meta: até ' + meta + ', realizado: ' + real + ')';
+  }
+  const falta = l.mesMeta - l.mesReal;
+  return falta > 0
+    ? 'faltam ' + fmtValor(falta, c.tipo) + ' para bater a meta (meta: ' + meta + ', realizado: ' + real + ')'
+    : 'meta batida (meta: ' + meta + ', realizado: ' + real + ')';
+}
+
+function renderPlanoAcao(ag) {
+  const alvo = $('#plano-acao-wrap');
+  if (!alvo) return;
+  if (!state.records.length) { alvo.innerHTML = ''; return; }
+
+  const avaliados = ag.linhas.filter(function (l) { return l.temMeta && l.mesPct != null; });
+  const itens = avaliados
+    .map(function (l) { return { l: l, sev: classificarSeveridadePlano(l.mesPct) }; })
+    .filter(function (x) { return x.sev; })
+    .sort(function (a, b) { return a.l.mesPct - b.l.mesPct; });
+
+  const criticos = itens.filter(function (x) { return x.sev === 'critico'; }).length;
+  const atencao = itens.length - criticos;
+  const emDia = avaliados.length - itens.length;
+
+  const resumo =
+    '<div class="plano-resumo">' +
+      '<span class="chip chip-bad">' + criticos + ' crítico(s)</span>' +
+      '<span class="chip chip-new">' + atencao + ' em atenção</span>' +
+      '<span class="chip chip-ok">' + emDia + ' em dia</span>' +
+    '</div>';
+
+  const corpo = itens.length
+    ? itens.map(function (x) {
+        const l = x.l, c = l.cat, sevInfo = PLANO_SEVERIDADE[x.sev];
+        return '<div class="plano-item plano-item-' + x.sev + '">' +
+          '<span class="chip ' + sevInfo.chip + ' plano-item-sev">' + esc(sevInfo.label) + '</span>' +
+          '<span class="plano-item-grupo">' + esc(c.grupo) + '</span>' +
+          '<span class="plano-item-nome">' + esc(c.ind) + '</span>' +
+          '<span class="plano-item-pct">' + fmtPct(l.mesPct) + '</span>' +
+          '<span class="plano-item-detalhe">' + esc(descricaoGapPlano(l)) + '. ' + esc(sevInfo.acao) + '</span>' +
+        '</div>';
+      }).join('')
+    : '<div class="plano-vazio">Nenhuma ação necessária — todos os indicadores com meta neste recorte estão atingidos.</div>';
+
+  alvo.innerHTML =
+    '<section class="card plano-card">' +
+      '<div class="plano-head"><h3>Plano de Ação</h3>' + resumo + '</div>' +
+      '<div class="plano-lista">' + corpo + '</div>' +
+    '</section>';
 }
 
 function renderTudoVendas() {
@@ -5637,6 +5803,7 @@ function renderTudoVendas() {
   renderResumoVendas(ag);
   renderGrupos(ag);
   renderRelatorioCompacto(ag);
+  renderPlanoAcao(ag);
   renderRodape();
 }
 
@@ -6023,6 +6190,7 @@ function init() {
   }
   $('#btn-limpar-filtros').addEventListener('click', limparFiltros);
   $('#btn-compacto-limpar-filtros').addEventListener('click', limparFiltros);
+  $('#btn-plano-limpar-filtros').addEventListener('click', limparFiltros);
   $('#btn-imprimir').addEventListener('click', function () { window.print(); });
   $('#btn-importar-vendas').addEventListener('click', function () { $('#input-vendas').click(); });
   $('#input-vendas').addEventListener('change', function (e) {
