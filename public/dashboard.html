@@ -471,6 +471,7 @@ body.modo-compacto #area-compacto.active { flex: 1 1 auto; min-height: 0; displa
 .tbl-plano col.c-ind   { width: 165px; }
 .tbl-plano col.c-num   { width: 80px; } /* mesma largura da tabela principal — cabe valores em R$ */
 .tbl-plano col.c-acao  { width: 200px; }
+.tbl-plano .plano-sev { text-align: center; }
 .tbl-plano .plano-grupo { font-weight: 700; text-transform: uppercase; font-size: 8.5px; color: var(--text-muted); }
 .tbl-plano .plano-acao-txt { text-align: left; white-space: normal !important; color: var(--text-muted); }
 .tbl-plano tr.plano-linha-critico td { background: var(--bad-bg); }
@@ -1136,11 +1137,31 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
 /* Cabeçalho com a logomarca — só aparece na impressão (tela normal fica sem
    ele) e nos PDFs exportados (onde é mostrado por um instante enquanto o
    html2canvas tira a "foto"). Fica sempre como o primeiro elemento do
-   conteúdo impresso/exportado, o mais perto possível do topo da folha. */
-.print-logo-header { display: none; margin-bottom: 8px; }
-.print-logo-header img { height: 30px; width: auto; display: block; }
+   conteúdo impresso/exportado, o mais perto possível do topo da folha.
+   Mesmos tons de vermelho do cabeçalho do sistema (.rf-header), pra ficar
+   no padrão do Design System da RedeFlex. */
+.print-logo-header {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(100deg, var(--rf-bordo-deep) 0%, var(--rf-bordo) 55%, var(--rf-bordo-dark) 100%);
+  color: #fff;
+  border-radius: var(--r-md);
+  padding: 9px 16px;
+  margin-bottom: 10px;
+}
+.print-logo-chip {
+  background: #fff;
+  border-radius: var(--r-sm);
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.print-logo-chip img { height: 28px; width: auto; display: block; }
+.print-logo-titulo { font-size: 16px; font-weight: 800; letter-spacing: .3px; }
 @media print {
-  .print-logo-header { display: block !important; }
+  .print-logo-header { display: flex !important; }
 }
 
 /* ==========================================================================
@@ -1823,7 +1844,10 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
 
     <!-- Conteúdo do relatório: é exatamente isto que vira o PDF de cada hierarquia -->
     <div id="relatorio-conteudo">
-      <div class="print-logo-header"></div>
+      <div class="print-logo-header">
+        <span class="print-logo-chip"></span>
+        <span class="print-logo-titulo">Painel de Indicadores RedeFlex</span>
+      </div>
       <!-- Cabeçalho: identifica a hierarquia e o mês do recorte que está sendo
            impresso/exportado — sem isso não dá pra saber de quem é o arquivo. -->
       <section class="rf-relatorio-cabecalho" id="relatorio-cabecalho"></section>
@@ -1847,8 +1871,7 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
       <div>Meta da semana = meta mensal ÷ dias úteis do mês × dias úteis da semana ·
            Meta dia = meta mensal ÷ dias úteis do mês</div>
       <div>Proj. Mês = realizado do mês ÷ dias úteis decorridos × dias úteis do mês ·
-           Proj. Sem. = realizado da semana ÷ dias úteis decorridos na semana × dias úteis da semana ·
-           [Meta Dia] % = média diária realizada ÷ meta dia</div>
+           Proj. Sem. = realizado da semana ÷ dias úteis decorridos na semana × dias úteis da semana</div>
       <div>Cada Diretoria (DDD) usa o próprio calendário de dias úteis, conforme cadastrado em
            <strong>Painel Administrativo → Feriados por DDD</strong>.</div>
     </footer>
@@ -1929,7 +1952,10 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
 
     <!-- Conteúdo do relatório: é exatamente isto que vira o PDF de 1 página -->
     <div id="plano-conteudo">
-      <div class="print-logo-header"></div>
+      <div class="print-logo-header">
+        <span class="print-logo-chip"></span>
+        <span class="print-logo-titulo">Painel de Indicadores RedeFlex</span>
+      </div>
       <div class="compacto-cabecalho no-print">
         <span class="rf-relatorio-cabecalho" id="plano-cabecalho"></span>
       </div>
@@ -5588,7 +5614,7 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
       '<col class="c-sep">' +
       '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
       '<col class="c-sep">' +
-      '<col class="c-num"><col class="c-num">' +
+      '<col class="c-num">' +
     '</colgroup>';
 
   const thBand =
@@ -5601,7 +5627,7 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
       '<th rowspan="2" class="sep-col"></th>' +
       '<th colspan="4" class="band-week">[ Semana Atual ]</th>' +
       '<th rowspan="2" class="sep-col"></th>' +
-      '<th colspan="2" class="band-day">[ Meta Dia ]</th>' +
+      '<th colspan="1" class="band-day">[ Meta Dia ]</th>' +
     '</tr>';
 
   const thCols =
@@ -5609,7 +5635,7 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
       ag.meses.map(function (m) { return '<th class="num">' + m.rotulo + '</th>'; }).join('') +
       '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Mês</th>' +
       '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Sem.</th>' +
-      '<th class="num">Qtde</th><th class="num">%</th>' +
+      '<th class="num">Meta</th>' +
     '</tr>';
 
   const corpo = linhas.map(function (l) {
@@ -5630,7 +5656,6 @@ function montarBlocoGrupo(nomeExibicao, linhas, ag, classeExtra) {
       '<td class="num">' + fmtValor(l.projSem, c.tipo) + '</td>' +
       '<td class="sep-col"></td>' +
       '<td class="num">' + (l.metaDia == null ? '<span class="void">—</span>' : fmtValor(l.metaDia, c.tipo)) + '</td>' +
-      celPct(l.diaPct, l.temMeta) +
     '</tr>';
   }).join('');
 
@@ -5668,7 +5693,7 @@ function montarTabelaCompactaHtml(ag) {
       '<col class="c-sep">' +
       '<col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num">' +
       '<col class="c-sep">' +
-      '<col class="c-num"><col class="c-num">' +
+      '<col class="c-num">' +
     '</colgroup>';
 
   const thBand =
@@ -5682,7 +5707,7 @@ function montarTabelaCompactaHtml(ag) {
       '<th rowspan="2" class="sep-col"></th>' +
       '<th colspan="4" class="band-week">[ Semana Atual ]</th>' +
       '<th rowspan="2" class="sep-col"></th>' +
-      '<th colspan="2" class="band-day">[ Meta Dia ]</th>' +
+      '<th colspan="1" class="band-day">[ Meta Dia ]</th>' +
     '</tr>';
 
   const thCols =
@@ -5690,7 +5715,7 @@ function montarTabelaCompactaHtml(ag) {
       ag.meses.map(function (m) { return '<th class="num">' + m.rotulo + '</th>'; }).join('') +
       '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Mês</th>' +
       '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Proj. Sem.</th>' +
-      '<th class="num">Qtde</th><th class="num">%</th>' +
+      '<th class="num">Meta</th>' +
     '</tr>';
 
   const corpo = gruposComDado.map(function (g) {
@@ -5714,7 +5739,6 @@ function montarTabelaCompactaHtml(ag) {
         '<td class="num">' + fmtValor(l.projSem, c.tipo) + '</td>' +
         '<td class="sep-col"></td>' +
         '<td class="num">' + (l.metaDia == null ? '<span class="void">—</span>' : fmtValor(l.metaDia, c.tipo)) + '</td>' +
-        celPct(l.diaPct, l.temMeta) +
       '</tr>';
     }).join('');
   }).join('');
@@ -5793,7 +5817,7 @@ function renderPlanoAcao(ag) {
       itens.map(function (x) {
         const l = x.l, c = l.cat, sevInfo = PLANO_SEVERIDADE[x.sev];
         return '<tr class="plano-linha-' + x.sev + '">' +
-          '<td><span class="chip ' + sevInfo.chip + '">' + esc(sevInfo.label) + '</span></td>' +
+          '<td class="plano-sev"><span class="chip ' + sevInfo.chip + '">' + esc(sevInfo.label) + '</span></td>' +
           '<td class="plano-grupo">' + esc(c.grupo) + '</td>' +
           '<td class="col-ind">' + esc(c.ind) + '</td>' +
           '<td class="num">' + fmtValor(l.mesMeta, c.tipo) + '</td>' +
@@ -5969,7 +5993,7 @@ function coletarItensExportPdf() {
    precisa ser mostrado manualmente só durante a captura. */
 async function html2canvasComLogo(el, opcoes) {
   const logo = el.querySelector('.print-logo-header');
-  if (logo) logo.style.display = 'block';
+  if (logo) logo.style.display = 'flex';
   try {
     return await html2canvas(el, opcoes);
   } finally {
@@ -6032,8 +6056,10 @@ async function gerarPdfUmaPaginaExportPdf(el) {
     alturaFinal = alturaUtil;
     larguraFinal = canvas.width * (alturaUtil / canvas.height);
   }
+  /* Alinhado no topo da página (não centralizado verticalmente) — só
+     centraliza na horizontal, se a largura final ficar menor que a útil. */
   const x = margem + (larguraUtil - larguraFinal) / 2;
-  const y = margem + (alturaUtil - alturaFinal) / 2;
+  const y = margem;
   pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, y, larguraFinal, alturaFinal);
   return pdf.output('blob');
 }
@@ -6190,9 +6216,9 @@ function renderRodape() {
 function popularLogosImpressao() {
   const origem = document.querySelector('.rf-logo-chip img');
   if (!origem) return;
-  $$('.print-logo-header').forEach(function (div) {
-    div.innerHTML = '';
-    div.appendChild(origem.cloneNode(true));
+  $$('.print-logo-chip').forEach(function (chip) {
+    chip.innerHTML = '';
+    chip.appendChild(origem.cloneNode(true));
   });
 }
 
