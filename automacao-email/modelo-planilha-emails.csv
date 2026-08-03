@@ -1,0 +1,5 @@
+Nível,Nome,E-mail,Ativo
+Diretoria,BH,diretor.bh@exemplo.com,TRUE
+Gerente,Gerência MG,gerente.mg@exemplo.com,TRUE
+Supervisor,Supervisão BH,supervisor.bh@exemplo.com,TRUE
+Vendedor,Karla Prado,karla.prado@exemplo.com,TRUE
