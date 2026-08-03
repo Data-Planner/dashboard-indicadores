@@ -459,29 +459,24 @@ body.modo-compacto #area-compacto.active { flex: 1 1 auto; min-height: 0; displa
 .plano-head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-3); }
 .plano-head h3 { font-size: var(--fs-lg); margin: 0; }
 .plano-resumo { display: flex; gap: 6px; }
-.plano-lista { display: flex; flex-direction: column; gap: 6px; }
-.plano-item {
-  display: grid;
-  grid-template-columns: 80px 100px minmax(160px, 260px) 56px 1fr;
-  align-items: center; gap: var(--sp-3);
-  padding: 8px 10px;
-  border: 1px solid var(--line); border-left: 3px solid var(--text-faint);
-  border-radius: var(--r-sm);
-  font-size: var(--fs-sm);
-}
-.plano-item-critico { border-left-color: var(--bad); background: var(--bad-bg); }
-.plano-item-atencao { border-left-color: #F59E0B; background: var(--warn-bg); }
-.plano-item-sev { justify-self: start; }
-.plano-item-grupo { font-weight: 700; text-transform: uppercase; font-size: var(--fs-xs); color: var(--text-muted); }
-.plano-item-nome { font-weight: 600; color: var(--text); }
-.plano-item-pct { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
-.plano-item-detalhe { color: var(--text-muted); }
+.plano-lista { overflow-x: auto; }
 .plano-vazio { color: var(--ok-strong); font-weight: 600; padding: 10px 0; }
 
-@media (max-width: 900px) {
-  .plano-item { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; }
-  .plano-item-detalhe { grid-column: 1 / -1; }
-}
+/* Tabela do plano — mesma densidade/estilo do Relatório Compacto (.tbl-compacto),
+   uma linha por indicador abaixo da meta, sem texto corrido: tudo em colunas,
+   pra caber junto com a tabela principal numa exportação de página única. */
+.tbl-plano { width: 100%; }
+.tbl-plano col.c-sev   { width: 64px; }
+.tbl-plano col.c-grupo { width: 68px; }
+.tbl-plano col.c-ind   { width: 165px; }
+.tbl-plano col.c-num   { width: 56px; }
+.tbl-plano col.c-acao  { width: auto; }
+.tbl-plano .plano-grupo { font-weight: 700; text-transform: uppercase; font-size: 8.5px; color: var(--text-muted); }
+.tbl-plano .plano-acao-txt { text-align: left; white-space: normal !important; color: var(--text-muted); }
+.tbl-plano tr.plano-linha-critico td { background: var(--bad-bg); }
+.tbl-plano tr.plano-linha-atencao td { background: var(--warn-bg); }
+.tbl-plano tr:nth-child(even).plano-linha-critico td,
+.tbl-plano tr:nth-child(even).plano-linha-atencao td { filter: brightness(0.98); }
 
 .ind-cell { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .swatch-na {
@@ -1915,13 +1910,20 @@ th.hie-th-ativo { background: var(--rf-bordo-50); }
         <select id="fp-ref"></select>
       </div>
       <button class="btn btn-ghost" id="btn-plano-limpar-filtros">Limpar filtros</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-primary" id="btn-plano-exportar-pdf">⎙ Imprimir em PDF (1 página)</button>
     </section>
-    <div class="compacto-cabecalho no-print">
-      <span class="rf-relatorio-cabecalho" id="plano-cabecalho"></span>
-    </div>
-    <div class="plano-tbl-wrap" id="plano-tbl-wrap"></div>
+    <div id="plano-status" class="tmuted" style="margin-bottom:6px;"></div>
 
-    <div id="plano-acao-wrap"></div>
+    <!-- Conteúdo do relatório: é exatamente isto que vira o PDF de 1 página -->
+    <div id="plano-conteudo">
+      <div class="compacto-cabecalho no-print">
+        <span class="rf-relatorio-cabecalho" id="plano-cabecalho"></span>
+      </div>
+      <div class="plano-tbl-wrap" id="plano-tbl-wrap"></div>
+
+      <div id="plano-acao-wrap"></div>
+    </div>
   </section>
 
   <footer class="rf-foot">
@@ -5724,10 +5726,8 @@ function renderRelatorioCompacto(ag) {
    recomendação padrão conforme a gravidade.
    ========================================================================== */
 const PLANO_SEVERIDADE = {
-  critico: { label: 'Crítico', chip: 'chip-bad',
-    acao: 'Ação prioritária: reforçar imediatamente as ações comerciais para reverter esse resultado ainda neste mês.' },
-  atencao: { label: 'Atenção', chip: 'chip-new',
-    acao: 'Ação recomendada: acompanhar de perto e reforçar pontualmente até o fim do mês.' }
+  critico: { label: 'Crítico', chip: 'chip-bad',  acao: 'Priorizar ação comercial imediata.' },
+  atencao: { label: 'Atenção', chip: 'chip-new',  acao: 'Acompanhar de perto e reforçar.' }
 };
 
 function classificarSeveridadePlano(pct) {
@@ -5736,21 +5736,12 @@ function classificarSeveridadePlano(pct) {
   return null;
 }
 
-/* Frase com os números reais do indicador — considera indicadores "inverso"
-   (quanto menor, melhor), cujo sentido de "falta"/"excesso" é o oposto. */
-function descricaoGapPlano(l) {
+/* Diferença até a meta, já no sentido certo pra indicadores "inverso"
+   (quanto menor, melhor) — positivo sempre significa "precisa melhorar". */
+function diferencaAteMetaPlano(l) {
   const c = l.cat;
-  const meta = fmtValor(l.mesMeta, c.tipo), real = fmtValor(l.mesReal, c.tipo);
-  if (c.inverso) {
-    const excesso = l.mesReal - l.mesMeta;
-    return excesso > 0
-      ? 'excedeu o limite em ' + fmtValor(excesso, c.tipo) + ' (meta: até ' + meta + ', realizado: ' + real + ')'
-      : 'dentro do limite (meta: até ' + meta + ', realizado: ' + real + ')';
-  }
-  const falta = l.mesMeta - l.mesReal;
-  return falta > 0
-    ? 'faltam ' + fmtValor(falta, c.tipo) + ' para bater a meta (meta: ' + meta + ', realizado: ' + real + ')'
-    : 'meta batida (meta: ' + meta + ', realizado: ' + real + ')';
+  const diff = c.inverso ? (l.mesReal - l.mesMeta) : (l.mesMeta - l.mesReal);
+  return diff > 0 ? fmtValor(diff, c.tipo) : '—';
 }
 
 function renderPlanoAcao(ag) {
@@ -5776,16 +5767,28 @@ function renderPlanoAcao(ag) {
     '</div>';
 
   const corpo = itens.length
-    ? itens.map(function (x) {
+    ? '<table class="tbl-compacto tbl-plano"><colgroup>' +
+        '<col class="c-sev"><col class="c-grupo"><col class="c-ind"><col class="c-num"><col class="c-num">' +
+        '<col class="c-num"><col class="c-num"><col class="c-acao">' +
+      '</colgroup><thead><tr>' +
+        '<th>Sev.</th><th>Grupo</th><th style="text-align:left">Indicador</th>' +
+        '<th class="num">Meta</th><th class="num">Real</th><th class="num">%</th><th class="num">Dif.</th>' +
+        '<th style="text-align:left">Ação recomendada</th>' +
+      '</tr></thead><tbody>' +
+      itens.map(function (x) {
         const l = x.l, c = l.cat, sevInfo = PLANO_SEVERIDADE[x.sev];
-        return '<div class="plano-item plano-item-' + x.sev + '">' +
-          '<span class="chip ' + sevInfo.chip + ' plano-item-sev">' + esc(sevInfo.label) + '</span>' +
-          '<span class="plano-item-grupo">' + esc(c.grupo) + '</span>' +
-          '<span class="plano-item-nome">' + esc(c.ind) + '</span>' +
-          '<span class="plano-item-pct">' + fmtPct(l.mesPct) + '</span>' +
-          '<span class="plano-item-detalhe">' + esc(descricaoGapPlano(l)) + '. ' + esc(sevInfo.acao) + '</span>' +
-        '</div>';
-      }).join('')
+        return '<tr class="plano-linha-' + x.sev + '">' +
+          '<td><span class="chip ' + sevInfo.chip + '">' + esc(sevInfo.label) + '</span></td>' +
+          '<td class="plano-grupo">' + esc(c.grupo) + '</td>' +
+          '<td class="col-ind">' + esc(c.ind) + '</td>' +
+          '<td class="num">' + fmtValor(l.mesMeta, c.tipo) + '</td>' +
+          '<td class="num num-real">' + fmtValor(l.mesReal, c.tipo) + '</td>' +
+          '<td class="num">' + fmtPct(l.mesPct) + '</td>' +
+          '<td class="num">' + diferencaAteMetaPlano(l) + '</td>' +
+          '<td class="plano-acao-txt">' + esc(sevInfo.acao) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>'
     : '<div class="plano-vazio">Nenhuma ação necessária — todos os indicadores com meta neste recorte estão atingidos.</div>';
 
   alvo.innerHTML =
@@ -5977,6 +5980,61 @@ async function gerarPdfDoElementoExportPdf(el) {
     }
   }
   return pdf.output('blob');
+}
+
+/* Igual ao gerarPdfDoElementoExportPdf, mas nunca pagina — em vez de cortar
+   o conteúdo em várias páginas quando é mais alto que uma A4, encolhe a
+   imagem inteira (mantendo a proporção, sem cortar nada) até caber numa
+   página só. Usado pelo PDF do Relatório + Plano de Ação, que precisa sair
+   numa única folha. */
+async function gerarPdfUmaPaginaExportPdf(el) {
+  const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const margem = 8;
+  const larguraUtil = pageW - margem * 2;
+  const alturaUtil = pageH - margem * 2;
+
+  const alturaNaLarguraTotal = canvas.height * (larguraUtil / canvas.width);
+  let larguraFinal = larguraUtil, alturaFinal = alturaNaLarguraTotal;
+  if (alturaNaLarguraTotal > alturaUtil) {
+    alturaFinal = alturaUtil;
+    larguraFinal = canvas.width * (alturaUtil / canvas.height);
+  }
+  const x = margem + (larguraUtil - larguraFinal) / 2;
+  const y = margem + (alturaUtil - alturaFinal) / 2;
+  pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, y, larguraFinal, alturaFinal);
+  return pdf.output('blob');
+}
+
+/* dd.mm.aa.Plano-de-Acao.<nível mais específico marcado, ou "Todos"> */
+function nomeArquivoPlanoAcao() {
+  const prefixo = dataArquivoExportPdf(new Date());
+  const nome = state.filtros.vendedor || state.filtros.supervisor || state.filtros.gerente || state.filtros.diretoria || 'Todos';
+  return prefixo + '.Plano-de-Acao.' + sanitizarNomeArquivoExportPdf(nome);
+}
+
+async function exportarPdfPlanoAcao() {
+  if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+    toast('Leitor de PDF não carregado nesta versão do arquivo.', 'bad');
+    return;
+  }
+  const btn = $('#btn-plano-exportar-pdf'), status = $('#plano-status');
+  btn.disabled = true;
+  status.textContent = 'Gerando PDF...';
+  try {
+    const blob = await gerarPdfUmaPaginaExportPdf($('#plano-conteudo'));
+    await salvarArquivoExportPdf(null, nomeArquivoPlanoAcao() + '.pdf', blob);
+    toast('PDF gerado.', 'ok');
+  } catch (e) {
+    console.error(e);
+    toast('Falha ao gerar o PDF: ' + (e && e.message ? e.message : e), 'bad');
+  } finally {
+    btn.disabled = false;
+    status.textContent = '';
+  }
 }
 
 async function salvarArquivoExportPdf(dirHandle, nomeArquivo, blob) {
@@ -6191,6 +6249,7 @@ function init() {
   $('#btn-limpar-filtros').addEventListener('click', limparFiltros);
   $('#btn-compacto-limpar-filtros').addEventListener('click', limparFiltros);
   $('#btn-plano-limpar-filtros').addEventListener('click', limparFiltros);
+  $('#btn-plano-exportar-pdf').addEventListener('click', exportarPdfPlanoAcao);
   $('#btn-imprimir').addEventListener('click', function () { window.print(); });
   $('#btn-importar-vendas').addEventListener('click', function () { $('#input-vendas').click(); });
   $('#input-vendas').addEventListener('change', function (e) {
