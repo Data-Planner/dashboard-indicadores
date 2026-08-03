@@ -436,6 +436,9 @@ body.modo-compacto #area-compacto.active { flex: 1 1 auto; min-height: 0; displa
 }
 .tbl-compacto tbody tr:nth-child(even) td { background: var(--surface-alt); }
 .tbl-compacto tbody tr:hover td { background: var(--rf-bordo-50); }
+/* Linha de destaque no início de cada agrupador — só um separador visual,
+   não muda nada no conteúdo/estrutura da tabela. */
+.tbl-compacto tbody tr.grupo-inicio td { border-top: 2px solid var(--rf-bordo); }
 .tbl-compacto .col-grupo {
   text-align: left; vertical-align: middle; font-weight: 800; text-transform: uppercase;
   letter-spacing: .3px; font-size: 9px; color: var(--rf-bordo-dark);
@@ -5601,7 +5604,7 @@ function renderRelatorioCompacto(ag) {
     const linhas = porGrupo[g];
     return linhas.map(function (l, i) {
       const c = l.cat;
-      return '<tr>' +
+      return '<tr' + (i === 0 ? ' class="grupo-inicio"' : '') + '>' +
         (i === 0 ? '<td class="col-grupo" rowspan="' + linhas.length + '">' + esc(g) + '</td>' : '') +
         '<td class="col-ind"><div class="ind-cell">' + (c.foco ? '<span class="ind-foco-marca" title="Indicador foco">★</span>' : '') + '<span>' + esc(c.ind) + '</span></div></td>' +
         '<td class="col-tipo">' + esc(c.tipo) + '</td>' +
